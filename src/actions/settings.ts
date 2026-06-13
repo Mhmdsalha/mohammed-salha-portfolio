@@ -5,9 +5,24 @@ import { z } from "zod";
 import { hasDashboardSession } from "@/lib/dashboard-auth";
 import { saveSiteSettings } from "@/lib/site-settings";
 
-const optionalUrl = z.string().trim().url("Enter a valid URL.").or(z.literal(""));
-const optionalText = z.string().trim().optional().default("");
-const optionalEmail = z.string().trim().email("Enter a valid email.").or(z.literal(""));
+function normalizeOptional(value: unknown) {
+  const text = String(value ?? "").trim();
+  return text === "#" ? "" : text;
+}
+
+const optionalText = z.preprocess(normalizeOptional, z.string());
+const optionalEmail = z.preprocess(
+  normalizeOptional,
+  z.string().refine((value) => value === "" || z.string().email().safeParse(value).success, {
+    message: "Enter a valid email."
+  })
+);
+const optionalUrl = z.preprocess(
+  normalizeOptional,
+  z.string().refine((value) => value === "" || z.string().url().safeParse(value).success, {
+    message: "Enter a valid URL."
+  })
+);
 
 const settingsSchema = z.object({
   whatsapp: optionalText,
@@ -28,7 +43,9 @@ export async function updateSiteSettings(data: unknown) {
   const parsed = settingsSchema.safeParse(data);
 
   if (!parsed.success) {
-    return { success: false, message: "Please check the contact fields." };
+    const issue = parsed.error.issues[0];
+    const field = issue?.path.join(".") || "contact fields";
+    return { success: false, message: `Please check ${field}: ${issue?.message ?? "invalid value"}` };
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {

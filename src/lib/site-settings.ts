@@ -9,11 +9,11 @@ export function getDefaultSiteSettings(): SiteSettings {
     whatsapp: "",
     phone: "",
     email: "",
-    github: "#",
-    linkedin: "#",
-    twitter: "#",
-    khamsat: "#",
-    mostaql: "#"
+    github: "",
+    linkedin: "",
+    twitter: "",
+    khamsat: "",
+    mostaql: ""
   };
 }
 
