@@ -1,7 +1,10 @@
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ProjectForm } from "@/components/dashboard/ProjectForm";
+import { requireDashboardAuth } from "@/lib/dashboard-auth";
 
-export default function NewProjectPage() {
+export default async function NewProjectPage() {
+  await requireDashboardAuth();
+
   return (
     <>
       <DashboardHeader

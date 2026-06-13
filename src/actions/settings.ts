@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { hasDashboardSession } from "@/lib/dashboard-auth";
 import { saveSiteSettings } from "@/lib/site-settings";
 
 const optionalUrl = z.string().url("Enter a valid URL.").or(z.literal(""));
@@ -18,6 +19,10 @@ const settingsSchema = z.object({
 });
 
 export async function updateSiteSettings(data: unknown) {
+  if (!(await hasDashboardSession())) {
+    return { success: false, message: "Unauthorized." };
+  }
+
   const parsed = settingsSchema.safeParse(data);
 
   if (!parsed.success) {

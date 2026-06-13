@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { hasDashboardSession } from "@/lib/dashboard-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const projectSchema = z.object({
@@ -77,6 +78,10 @@ async function uploadImageFile(file: File, slug: string, prefix: string) {
 }
 
 export async function uploadProjectImages(formData: FormData) {
+  if (!(await hasDashboardSession())) {
+    return { success: false, message: "Unauthorized." };
+  }
+
   const slug = String(formData.get("slug") ?? "");
 
   if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
@@ -115,6 +120,10 @@ export async function uploadProjectImages(formData: FormData) {
 }
 
 export async function createProject(data: unknown) {
+  if (!(await hasDashboardSession())) {
+    return { success: false, message: "Unauthorized." };
+  }
+
   const parsed = projectSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -151,6 +160,10 @@ export async function createProject(data: unknown) {
 }
 
 export async function updateProject(id: string, data: unknown) {
+  if (!(await hasDashboardSession())) {
+    return { success: false, message: "Unauthorized." };
+  }
+
   const parsed = projectSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -194,6 +207,10 @@ export async function updateProject(id: string, data: unknown) {
 }
 
 export async function deleteProject(id: string) {
+  if (!(await hasDashboardSession())) {
+    return { success: false, message: "Unauthorized." };
+  }
+
   if (id.startsWith("mock-")) {
     return {
       success: true,

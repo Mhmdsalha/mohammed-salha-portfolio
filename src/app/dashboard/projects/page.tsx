@@ -2,9 +2,12 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ProjectTable } from "@/components/dashboard/ProjectTable";
+import { requireDashboardAuth } from "@/lib/dashboard-auth";
 import { getProjects } from "@/lib/projects";
 
 export default async function ProjectsPage() {
+  await requireDashboardAuth();
+
   const projects = await getProjects({ fallbackToMock: false });
 
   return (

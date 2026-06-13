@@ -27,14 +27,11 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 DASHBOARD_PASSWORD=
-NEXT_PUBLIC_WHATSAPP=
-NEXT_PUBLIC_EMAIL=
-NEXT_PUBLIC_GITHUB=
-NEXT_PUBLIC_LINKEDIN=
-NEXT_PUBLIC_TWITTER=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is required for dashboard writes, image uploads, and editable contact settings. Keep it secret and never expose it in client code.
+
+Contact details such as WhatsApp, email, GitHub, LinkedIn, X, Khamsat, and Mostaql are managed from `/dashboard/settings` after login.
 
 ## Supabase Setup
 
@@ -86,7 +83,7 @@ node scripts/seed-projects.mjs
 ## Vercel
 
 1. Import this GitHub repository in Vercel.
-2. Add the environment variables listed above.
+2. Add only the Supabase and dashboard password environment variables listed above.
 3. Use the default Next.js build settings.
 4. Deploy.
 

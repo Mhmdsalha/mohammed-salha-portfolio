@@ -1,4 +1,3 @@
-import { getPublicEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SiteSettings } from "@/types";
 
@@ -6,15 +5,13 @@ const bucketName = "site-settings";
 const filePath = "settings.json";
 
 export function getDefaultSiteSettings(): SiteSettings {
-  const env = getPublicEnv();
-
   return {
-    whatsapp: env.whatsapp,
-    phone: env.whatsapp,
-    email: env.email,
-    github: env.github,
-    linkedin: env.linkedin,
-    twitter: env.twitter,
+    whatsapp: "",
+    phone: "",
+    email: "",
+    github: "#",
+    linkedin: "#",
+    twitter: "#",
     khamsat: "#",
     mostaql: "#"
   };
