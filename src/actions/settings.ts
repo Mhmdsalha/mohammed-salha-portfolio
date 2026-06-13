@@ -5,12 +5,14 @@ import { z } from "zod";
 import { hasDashboardSession } from "@/lib/dashboard-auth";
 import { saveSiteSettings } from "@/lib/site-settings";
 
-const optionalUrl = z.string().url("Enter a valid URL.").or(z.literal(""));
+const optionalUrl = z.string().trim().url("Enter a valid URL.").or(z.literal(""));
+const optionalText = z.string().trim().optional().default("");
+const optionalEmail = z.string().trim().email("Enter a valid email.").or(z.literal(""));
 
 const settingsSchema = z.object({
-  whatsapp: z.string().min(6, "WhatsApp number is required."),
-  phone: z.string().min(6, "Phone number is required."),
-  email: z.string().email("Enter a valid email."),
+  whatsapp: optionalText,
+  phone: optionalText,
+  email: optionalEmail,
   github: optionalUrl,
   linkedin: optionalUrl,
   twitter: optionalUrl,

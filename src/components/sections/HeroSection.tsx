@@ -8,6 +8,10 @@ import { Locale, SiteSettings } from "@/types";
 
 const roles = ["Full-Stack Developer", "Salla Store Specialist", "Arabic Web Experiences"];
 
+function hasContactLink(value: string) {
+  return Boolean(value && value.trim() && value !== "#");
+}
+
 export function HeroSection({
   locale,
   settings
@@ -131,11 +135,13 @@ export function HeroSection({
                   { href: contact.linkedin, label: "LinkedIn", icon: Linkedin },
                   { href: contact.twitter, label: "X", icon: Twitter },
                   {
-                    href: `https://wa.me/${contact.whatsapp.replace(/[^\d]/g, "")}`,
+                    href: contact.whatsapp.replace(/[^\d]/g, "")
+                      ? `https://wa.me/${contact.whatsapp.replace(/[^\d]/g, "")}`
+                      : "#",
                     label: "WhatsApp",
                     icon: MessageCircle
                   }
-                ].map((item) => (
+                ].filter((item) => hasContactLink(item.href)).map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
