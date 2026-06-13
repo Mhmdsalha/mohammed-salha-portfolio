@@ -1,0 +1,44 @@
+{
+  "nav": {
+    "about": "نبذة",
+    "work": "الأعمال",
+    "services": "الخدمات",
+    "contact": "التواصل",
+    "hire": "وظفني"
+  },
+  "hero": {
+    "badge": "متاح للعمل",
+    "badgeAr": "Available for work",
+    "subtext": "أبني تجارب رقمية راقية للعالم العربي - من غزة، فلسطين.",
+    "cta1": "شاهد أعمالي",
+    "cta2": "تواصل معي"
+  },
+  "about": {
+    "heading": "نبذة عني",
+    "headingAr": "About Me",
+    "bio": "مطوّر ويب متكامل من غزة، فلسطين، متخصص في تجارب الويب الحديثة ومتاجر سلة للسوق العربي، أجمع بين الدقة التقنية والتصميم المدروس لبناء منتجات راقية.",
+    "bioAr": "Full-stack developer from Gaza, Palestine specializing in modern web experiences and Salla e-commerce stores for the Arab market."
+  },
+  "projects": {
+    "heading": "أبرز المشاريع",
+    "headingAr": "Selected Projects",
+    "all": "الكل",
+    "salla": "متاجر سلة",
+    "webapp": "تطبيقات ويب",
+    "pos": "أنظمة نقاط بيع",
+    "featured": "مشروع مميز"
+  },
+  "services": {
+    "heading": "ما أقدمه",
+    "headingAr": "What I Do"
+  },
+  "contact": {
+    "heading": "نبني شيئاً مميزاً معاً",
+    "headingAr": "Let's Build Something",
+    "subtext": "متاح للمشاريع المستقلة والتعاون.",
+    "subtextAr": "Available for freelance projects and collaborations."
+  },
+  "footer": {
+    "built": "صُمم وبُني من غزة، فلسطين"
+  }
+}

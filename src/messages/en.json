@@ -1,0 +1,44 @@
+{
+  "nav": {
+    "about": "About",
+    "work": "Work",
+    "services": "Services",
+    "contact": "Contact",
+    "hire": "Hire Me"
+  },
+  "hero": {
+    "badge": "Available for work",
+    "badgeAr": "متاح للعمل",
+    "subtext": "Building premium digital experiences for the Arab world - from Gaza, Palestine.",
+    "cta1": "View My Work",
+    "cta2": "Get in Touch"
+  },
+  "about": {
+    "heading": "About Me",
+    "headingAr": "نبذة عني",
+    "bio": "Full-stack developer from Gaza, Palestine specializing in modern web experiences and Salla e-commerce stores for the Arab market. I combine technical precision with thoughtful design to build products that feel premium.",
+    "bioAr": "مطوّر ويب متكامل من غزة، فلسطين، متخصص في تجارب الويب الحديثة ومتاجر سلة للسوق العربي، أجمع بين الدقة التقنية والتصميم المدروس لبناء منتجات راقية."
+  },
+  "projects": {
+    "heading": "Selected Projects",
+    "headingAr": "أبرز المشاريع",
+    "all": "All",
+    "salla": "Salla Stores",
+    "webapp": "Web Apps",
+    "pos": "POS Systems",
+    "featured": "Featured Project"
+  },
+  "services": {
+    "heading": "What I Do",
+    "headingAr": "ما أقدمه"
+  },
+  "contact": {
+    "heading": "Let's Build Something",
+    "headingAr": "نبني شيئاً مميزاً معاً",
+    "subtext": "Available for freelance projects and collaborations.",
+    "subtextAr": "متاح للمشاريع المستقلة والتعاون."
+  },
+  "footer": {
+    "built": "Designed and built from Gaza, Palestine"
+  }
+}
