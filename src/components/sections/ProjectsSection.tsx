@@ -12,7 +12,11 @@ export function ProjectsSection({
 }) {
   const isAr = locale === "ar";
   const featuredProjects = projects.filter((project) => project.featured);
-  const carouselProjects = featuredProjects.length > 0 ? featuredProjects : projects.slice(0, 1);
+  const secondaryProjects = projects.filter((project) => !project.featured);
+  const carouselProjects =
+    featuredProjects.length > 0
+      ? [...featuredProjects, ...secondaryProjects.slice(0, Math.max(0, 4 - featuredProjects.length))]
+      : projects.slice(0, 4);
   const carouselIds = new Set(carouselProjects.map((project) => project.id));
   const rest = projects.filter((project) => !carouselIds.has(project.id));
 

@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, Github } from "lucide-react";
 import { Locale, Project } from "@/types";
 
 const intervalMs = 5200;
+type SlideDirection = "next" | "prev";
 
 function projectText(project: Project, locale: Locale) {
   return {
@@ -25,6 +26,7 @@ export function FeaturedProjectsCarousel({
   locale: Locale;
 }) {
   const [active, setActive] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<SlideDirection>("next");
   const isAr = locale === "ar";
   const safeProjects = useMemo(() => projects.filter(Boolean), [projects]);
   const project = safeProjects[active] ?? safeProjects[0];
@@ -35,6 +37,7 @@ export function FeaturedProjectsCarousel({
     }
 
     const timer = window.setInterval(() => {
+      setSlideDirection("next");
       setActive((current) => (current + 1) % safeProjects.length);
     }, intervalMs);
 
@@ -47,8 +50,11 @@ export function FeaturedProjectsCarousel({
 
   const { title, description } = projectText(project, locale);
   const imageUrl = project.thumbnail_url ?? project.images[0];
+  const slideClass =
+    slideDirection === "next" ? "featured-project-slide-next" : "featured-project-slide-prev";
 
   const goTo = (direction: "next" | "prev") => {
+    setSlideDirection(direction);
     setActive((current) => {
       if (direction === "next") {
         return (current + 1) % safeProjects.length;
@@ -58,10 +64,19 @@ export function FeaturedProjectsCarousel({
     });
   };
 
+  const selectProject = (index: number) => {
+    if (index === active) {
+      return;
+    }
+
+    setSlideDirection(index > active ? "next" : "prev");
+    setActive(index);
+  };
+
   return (
     <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#050505] shadow-[0_22px_70px_rgba(0,0,0,0.42)]">
-      <div key={project.id} className="featured-project-enter">
-        <div className="relative border-b border-white/10 bg-black">
+      <div key={project.id} className={`featured-project-slide ${slideClass}`}>
+        <div className="featured-project-media relative border-b border-white/10 bg-black">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -79,8 +94,8 @@ export function FeaturedProjectsCarousel({
           </div>
         </div>
 
-        <div className="grid gap-5 p-5 md:p-6 lg:grid-cols-[0.62fr_0.38fr] lg:items-end">
-          <div>
+        <div className="featured-project-content grid gap-5 p-5 md:p-6 lg:grid-cols-[0.62fr_0.38fr] lg:items-end">
+          <div className="featured-project-copy">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
               {project.category}
             </p>
@@ -147,7 +162,7 @@ export function FeaturedProjectsCarousel({
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => setActive(index)}
+                      onClick={() => selectProject(index)}
                       className={`h-2 rounded-full transition-all ${
                         index === active
                           ? "w-8 bg-[var(--neon)] shadow-[0_0_16px_rgba(0,245,255,0.55)]"

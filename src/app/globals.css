@@ -202,21 +202,92 @@ textarea.field {
   }
 }
 
-@keyframes featured-project-enter {
+@keyframes featured-project-slide-next {
   0% {
     opacity: 0;
-    transform: translateY(18px) scale(0.985);
-    filter: blur(10px);
+    transform: translateX(34px) scale(0.985);
+    filter: blur(14px);
+  }
+  58% {
+    opacity: 1;
+    filter: blur(2px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(0) scale(1);
     filter: blur(0);
   }
 }
 
-.featured-project-enter {
-  animation: featured-project-enter 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+@keyframes featured-project-slide-prev {
+  0% {
+    opacity: 0;
+    transform: translateX(-34px) scale(0.985);
+    filter: blur(14px);
+  }
+  58% {
+    opacity: 1;
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes featured-project-media-enter {
+  0% {
+    opacity: 0.7;
+    transform: scale(1.025);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes featured-project-copy-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.featured-project-slide {
+  animation-duration: 760ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+
+.featured-project-slide-next {
+  animation-name: featured-project-slide-next;
+}
+
+.featured-project-slide-prev {
+  animation-name: featured-project-slide-prev;
+}
+
+.featured-project-media {
+  animation: featured-project-media-enter 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center;
+  will-change: opacity, transform;
+}
+
+.featured-project-content {
+  position: relative;
+  z-index: 1;
+}
+
+.featured-project-copy,
+.featured-project-content > div:last-child {
+  animation: featured-project-copy-enter 680ms cubic-bezier(0.22, 1, 0.36, 1) 110ms both;
+  will-change: opacity, transform;
 }
 
 .hero-shell {

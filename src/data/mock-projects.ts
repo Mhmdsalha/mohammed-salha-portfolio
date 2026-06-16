@@ -4,6 +4,26 @@ const now = new Date().toISOString();
 
 export const mockProjects: Project[] = [
   {
+    id: "mock-al-nakhba",
+    slug: "al-nakhba-real-estate",
+    title_ar: "النخبة للعقارات",
+    title_en: "Al Nakhba Real Estate",
+    description_ar:
+      "واجهة عقارية عربية فاخرة تعرض فرص البيع والاستثمار وإدارة العقارات بتجربة واضحة ومصممة للثقة.",
+    description_en:
+      "A premium Arabic real estate website for curated sales, investment, and property management opportunities.",
+    category: "webapp",
+    tags: ["Next.js", "TypeScript", "Tailwind CSS", "RTL", "Real Estate"],
+    thumbnail_url: null,
+    images: [],
+    live_url: "https://al-nakhba-real-estate.vercel.app/",
+    github_url: "https://github.com/Mhmdsalha/al-nakhba-real-estate",
+    featured: true,
+    order_num: 1,
+    created_at: now,
+    updated_at: now
+  },
+  {
     id: "mock-lamsa",
     slug: "lamsa-beauty-store",
     title_ar: "لمسة - متجر جمال فاخر",
@@ -17,8 +37,8 @@ export const mockProjects: Project[] = [
     images: [],
     live_url: "https://example.com",
     github_url: null,
-    featured: true,
-    order_num: 1,
+    featured: false,
+    order_num: 2,
     created_at: now,
     updated_at: now
   },
@@ -37,7 +57,7 @@ export const mockProjects: Project[] = [
     live_url: "https://example.com",
     github_url: null,
     featured: false,
-    order_num: 2,
+    order_num: 3,
     created_at: now,
     updated_at: now
   },
@@ -56,7 +76,7 @@ export const mockProjects: Project[] = [
     live_url: "https://example.com",
     github_url: null,
     featured: false,
-    order_num: 3,
+    order_num: 4,
     created_at: now,
     updated_at: now
   },
@@ -75,7 +95,7 @@ export const mockProjects: Project[] = [
     live_url: "https://example.com",
     github_url: null,
     featured: false,
-    order_num: 4,
+    order_num: 5,
     created_at: now,
     updated_at: now
   },
@@ -94,7 +114,7 @@ export const mockProjects: Project[] = [
     live_url: "https://example.com",
     github_url: null,
     featured: false,
-    order_num: 5,
+    order_num: 6,
     created_at: now,
     updated_at: now
   }

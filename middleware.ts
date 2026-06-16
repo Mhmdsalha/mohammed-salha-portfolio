@@ -4,6 +4,16 @@ const locales = ["en", "ar"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const localeDashboardPrefix = locales.find((locale) =>
+    pathname === `/${locale}/dashboard` || pathname.startsWith(`/${locale}/dashboard/`)
+  );
+
+  if (localeDashboardPrefix) {
+    const normalizedPathname = pathname.replace(`/${localeDashboardPrefix}/dashboard`, "/dashboard");
+    const url = request.nextUrl.clone();
+    url.pathname = normalizedPathname;
+    return NextResponse.redirect(url);
+  }
 
   if (pathname.startsWith("/dashboard/login")) {
     return NextResponse.next();
