@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { hasDashboardSession } from "@/lib/dashboard-auth";
+import { requireAdmin } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const projectSchema = z.object({
@@ -81,9 +81,8 @@ async function uploadImageFile(file: File, slug: string, prefix: string) {
 }
 
 export async function uploadProjectImages(formData: FormData) {
-  if (!(await hasDashboardSession())) {
-    return { success: false, message: "Unauthorized." };
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   const slug = String(formData.get("slug") ?? "");
 
@@ -125,9 +124,8 @@ export async function uploadProjectImages(formData: FormData) {
 }
 
 export async function createProject(data: unknown) {
-  if (!(await hasDashboardSession())) {
-    return { success: false, message: "Unauthorized." };
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   const parsed = projectSchema.safeParse(data);
 
@@ -165,9 +163,8 @@ export async function createProject(data: unknown) {
 }
 
 export async function updateProject(id: string, data: unknown) {
-  if (!(await hasDashboardSession())) {
-    return { success: false, message: "Unauthorized." };
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   const parsed = projectSchema.safeParse(data);
 
@@ -212,9 +209,8 @@ export async function updateProject(id: string, data: unknown) {
 }
 
 export async function deleteProject(id: string) {
-  if (!(await hasDashboardSession())) {
-    return { success: false, message: "Unauthorized." };
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   if (id.startsWith("mock-")) {
     return {

@@ -16,7 +16,7 @@ Proposal: `pos → system`, `other → webapp`, run before the constraint is add
 
 ## D-003 No baseline migration exists — Accepted
 
-There is no `supabase/` folder; the current schema lives only in README.md. A1 writes `supabase/migrations/0001_baseline.sql` (idempotent `create table if not exists`, matching README) so `0002_rebuild.sql` applies to a fresh database as well as production.
+There is no `supabase/` folder; the current schema lives only in README.md. A1 writes `supabase/migrations/0000_baseline.sql` (idempotent `create table if not exists`, matching README) so `0002_rebuild.sql` applies to a fresh database as well as production. (Renamed from `0001_baseline.sql`: D1-1 took `0001` for `login_attempts`; see D-018.)
 
 ## D-004 Unpublished and GitHub-less projects stay publicly readable — Accepted
 
@@ -114,7 +114,19 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 - **CI build without secrets:** the CI build runs with no Supabase env and currently passes on the mock fallback. When D1-2 removes the fallback and R12 makes missing env fail the build, CI needs either repository secrets or explicit dummy values; A1 and A6 settle this in D1-2.
 - **Pre-commit:** Husky runs `lint-staged` (ESLint `--fix` + Prettier on staged files). Typecheck and tests run in CI, not in the hook, to keep commits fast.
 
+## D-018 How D1-1 was built — Accepted (2026-11-20)
+
+- **Guard shape:** `requireAdmin()` returns `null` for a valid session or the `{ success: false, message: "Unauthorized." }` result, so the first two lines of every action are `const denied = await requireAdmin(); if (denied) return denied;`. It does not throw, because the dashboard forms (A5) already render result objects and a thrown error would surface as an unhandled rejection. Pages use `requireAdminPage()` (redirects). `src/lib/dashboard-auth.ts` stays as a one-line re-export so A5's pages need no edits.
+- **Cookie:** renamed to `dashboard_session`. The old `dashboard_token` is never read; login, logout and the middleware clear it.
+- **Fail closed:** without `SESSION_SECRET` (32+ chars), a valid `DASHBOARD_PASSWORD_HASH`, or a reachable `login_attempts` table, login is refused and every dashboard page redirects to login. This makes deploying D1-1 safe even before the env vars are set: the dashboard is locked, not open. It also means local dashboard login needs Supabase env and the migration applied.
+- **Migrations:** `0000_baseline` (D1-2), `0001_login_attempts` (D1-1), `0002_rebuild` (D1-2), applied in name order.
+- **Rate limit scope:** per client IP, salted SHA-256 hash only. An attacker rotating IPs is limited only by bcrypt cost (12) and password strength; `scripts/hash-password.mjs` requires 12+ characters. A global limit is in the backlog.
+- **Middleware:** rewritten for the signed session, which also removed the dead branch from audit C1 (part of P0-3).
+- **E2E proof:** acceptance is covered by Vitest (middleware with 7 forged-token variants; every exported action called without and with forged sessions, with a check that a missing guard fails the test) and by HTTP probes against a production build. The Playwright version of the "Attacker" path lands with P0-2, which sets Playwright up.
+
 ## Backlog (not in scope until A0 schedules it)
+
+- Global login limit across all IPs (D-018).
 
 - Content-Security-Policy and security headers in `next.config.ts` (A1).
 - Slug redirects table if slugs ever change after publish (R9 alternative).

@@ -26,8 +26,17 @@ Set the same variables in Vercel:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-DASHBOARD_PASSWORD=
+DASHBOARD_PASSWORD_HASH=
+SESSION_SECRET=
 ```
+
+Generate the two dashboard values (the password is read from the prompt, not the command line):
+
+```bash
+node scripts/hash-password.mjs
+```
+
+`DASHBOARD_PASSWORD_HASH` is the bcrypt hash encoded as base64, because Next.js expands `$` in `.env` files and would corrupt a raw hash. `SESSION_SECRET` signs the 8-hour dashboard session cookie; changing it signs everyone out. Without either value, or without the `login_attempts` table, dashboard login stays disabled (it fails closed). The old `DASHBOARD_PASSWORD` variable is no longer read; delete it.
 
 `SUPABASE_SERVICE_ROLE_KEY` is required for dashboard writes, image uploads, and editable contact settings. Keep it secret and never expose it in client code.
 
@@ -72,6 +81,8 @@ Create a public Storage bucket named `projects`.
 
 The dashboard contact settings are stored automatically in a Supabase Storage bucket named `site-settings` as `settings.json`.
 
+Apply the SQL files in `supabase/migrations/` in name order (Supabase SQL editor or `supabase db push`). `0001_login_attempts.sql` creates the table behind the dashboard login rate limit (5 failed attempts per 15 minutes per IP).
+
 ## Seed Projects
 
 After setting `.env.local`, seed the selected portfolio projects:
@@ -83,7 +94,7 @@ node scripts/seed-projects.mjs
 ## Vercel
 
 1. Import this GitHub repository in Vercel.
-2. Add only the Supabase and dashboard password environment variables listed above.
+2. Add the Supabase and dashboard auth environment variables listed above, in both Production and Preview.
 3. Use the default Next.js build settings.
 4. Deploy.
 

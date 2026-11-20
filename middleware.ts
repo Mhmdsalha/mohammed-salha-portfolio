@@ -1,44 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  LEGACY_SESSION_COOKIE,
+  SESSION_COOKIE,
+  getSessionKey,
+  verifySessionToken
+} from "@/lib/auth/session";
 
 const locales = ["en", "ar"];
+const LOGIN_PATH = "/dashboard/login";
 
-export function middleware(request: NextRequest) {
+function isDashboardPath(pathname: string) {
+  return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+}
+
+function redirectToLogin(request: NextRequest) {
+  const response = NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+  response.cookies.delete(SESSION_COOKIE);
+  response.cookies.delete({ name: LEGACY_SESSION_COOKIE, path: "/dashboard" });
+  return response;
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const localeDashboardPrefix = locales.find(
     (locale) => pathname === `/${locale}/dashboard` || pathname.startsWith(`/${locale}/dashboard/`)
   );
 
   if (localeDashboardPrefix) {
-    const normalizedPathname = pathname.replace(
-      `/${localeDashboardPrefix}/dashboard`,
-      "/dashboard"
-    );
     const url = request.nextUrl.clone();
-    url.pathname = normalizedPathname;
+    url.pathname = pathname.replace(`/${localeDashboardPrefix}/dashboard`, "/dashboard");
     return NextResponse.redirect(url);
   }
 
-  if (pathname.startsWith("/dashboard/login")) {
+  if (pathname === LOGIN_PATH || !isDashboardPath(pathname)) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/dashboard")) {
-    const token = request.cookies.get("dashboard_token")?.value;
-    if (token !== "authenticated") {
-      return NextResponse.redirect(new URL("/dashboard/login", request.url));
-    }
-    return NextResponse.next();
-  }
-
-  const hasLocale = locales.some(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+  // First gate only. Server actions re-check with requireAdmin(), because an action can be
+  // POSTed to any route, including ones this middleware lets through.
+  const session = await verifySessionToken(
+    request.cookies.get(SESSION_COOKIE)?.value,
+    getSessionKey()
   );
 
-  if (!hasLocale && pathname !== "/" && !pathname.startsWith("/_next")) {
-    return NextResponse.next();
-  }
-
-  return NextResponse.next();
+  return session ? NextResponse.next() : redirectToLogin(request);
 }
 
 export const config = {
