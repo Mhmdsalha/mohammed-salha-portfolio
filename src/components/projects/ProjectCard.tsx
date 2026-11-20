@@ -9,8 +9,8 @@ export function ProjectCard({ project, locale }: { project: Project; locale: Loc
   const title = locale === "ar" ? project.title_ar : project.title_en;
   const description =
     locale === "ar"
-      ? project.description_ar ?? project.description_en ?? ""
-      : project.description_en ?? project.description_ar ?? "";
+      ? (project.description_ar ?? project.description_en ?? "")
+      : (project.description_en ?? project.description_ar ?? "");
 
   return (
     <GlassCard as="article" className="group overflow-hidden">
@@ -27,7 +27,10 @@ export function ProjectCard({ project, locale }: { project: Project; locale: Loc
         <div className="my-5 h-px bg-white/10" />
         <div className="flex flex-wrap gap-2">
           {project.tags.slice(0, 4).map((tag) => (
-            <span key={tag} className="rounded-full bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] text-[var(--text-muted)]">
+            <span
+              key={tag}
+              className="rounded-full bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] text-[var(--text-muted)]"
+            >
               {tag}
             </span>
           ))}
@@ -40,12 +43,18 @@ export function ProjectCard({ project, locale }: { project: Project; locale: Loc
             Details
           </Link>
           {project.live_url ? (
-            <Link href={project.live_url} className="focus-ring text-white hover:text-[var(--neon)]">
+            <Link
+              href={project.live_url}
+              className="focus-ring text-white hover:text-[var(--neon)]"
+            >
               Live ↗
             </Link>
           ) : null}
           {project.github_url ? (
-            <Link href={project.github_url} className="focus-ring inline-flex items-center gap-1 text-[var(--text-secondary)] hover:text-white">
+            <Link
+              href={project.github_url}
+              className="focus-ring inline-flex items-center gap-1 text-[var(--text-secondary)] hover:text-white"
+            >
               <Github size={14} />
               GitHub
             </Link>

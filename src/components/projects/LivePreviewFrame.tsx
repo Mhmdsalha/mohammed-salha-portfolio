@@ -2,13 +2,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 
-export function LivePreviewFrame({
-  title,
-  liveUrl
-}: {
-  title: string;
-  liveUrl: string | null;
-}) {
+export function LivePreviewFrame({ title, liveUrl }: { title: string; liveUrl: string | null }) {
   if (!liveUrl) {
     return (
       <GlassCard className="flex min-h-[420px] items-center justify-center p-8 text-center">

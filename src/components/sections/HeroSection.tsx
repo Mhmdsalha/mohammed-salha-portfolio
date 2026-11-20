@@ -12,13 +12,7 @@ function hasContactLink(value: string) {
   return Boolean(value && value.trim() && value !== "#");
 }
 
-export function HeroSection({
-  locale,
-  settings
-}: {
-  locale: Locale;
-  settings?: SiteSettings;
-}) {
+export function HeroSection({ locale, settings }: { locale: Locale; settings?: SiteSettings }) {
   const [roleIndex, setRoleIndex] = useState(0);
   const [typedRole, setTypedRole] = useState("");
   const isAr = locale === "ar";
@@ -141,16 +135,18 @@ export function HeroSection({
                     label: "WhatsApp",
                     icon: MessageCircle
                   }
-                ].filter((item) => hasContactLink(item.href)).map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    aria-label={item.label}
-                    className="focus-ring inline-flex size-11 items-center justify-center rounded-full border border-black/10 bg-white text-[#59616a] shadow-[0_12px_32px_rgba(0,0,0,0.06)] transition hover:border-[#00aeca]/55 hover:text-[#009fb0]"
-                  >
-                    <item.icon size={17} />
-                  </a>
-                ))}
+                ]
+                  .filter((item) => hasContactLink(item.href))
+                  .map((item) => (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      aria-label={item.label}
+                      className="focus-ring inline-flex size-11 items-center justify-center rounded-full border border-black/10 bg-white text-[#59616a] shadow-[0_12px_32px_rgba(0,0,0,0.06)] transition hover:border-[#00aeca]/55 hover:text-[#009fb0]"
+                    >
+                      <item.icon size={17} />
+                    </a>
+                  ))}
               </div>
             </div>
 

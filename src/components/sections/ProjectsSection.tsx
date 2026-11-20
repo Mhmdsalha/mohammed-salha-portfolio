@@ -3,19 +3,16 @@ import { ProjectFilter } from "@/components/projects/ProjectFilter";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Locale, Project } from "@/types";
 
-export function ProjectsSection({
-  projects,
-  locale
-}: {
-  projects: Project[];
-  locale: Locale;
-}) {
+export function ProjectsSection({ projects, locale }: { projects: Project[]; locale: Locale }) {
   const isAr = locale === "ar";
   const featuredProjects = projects.filter((project) => project.featured);
   const secondaryProjects = projects.filter((project) => !project.featured);
   const carouselProjects =
     featuredProjects.length > 0
-      ? [...featuredProjects, ...secondaryProjects.slice(0, Math.max(0, 4 - featuredProjects.length))]
+      ? [
+          ...featuredProjects,
+          ...secondaryProjects.slice(0, Math.max(0, 4 - featuredProjects.length))
+        ]
       : projects.slice(0, 4);
   const carouselIds = new Set(carouselProjects.map((project) => project.id));
   const rest = projects.filter((project) => !carouselIds.has(project.id));

@@ -92,8 +92,16 @@ export function ImageUploader({
         {galleryUrls.length > 0 || galleryFiles.length > 0 ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {galleryUrls.map((url) => (
-              <div key={url} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[var(--border)] bg-black">
-                <Image src={url} alt="Saved gallery image" fill className="object-cover object-top" />
+              <div
+                key={url}
+                className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[var(--border)] bg-black"
+              >
+                <Image
+                  src={url}
+                  alt="Saved gallery image"
+                  fill
+                  className="object-cover object-top"
+                />
                 <button
                   type="button"
                   onClick={() => onRemoveGalleryUrl(url)}
@@ -107,7 +115,10 @@ export function ImageUploader({
             {galleryFiles.map((file) => {
               const url = URL.createObjectURL(file);
               return (
-                <div key={`${file.name}-${file.size}`} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[var(--border)] bg-black">
+                <div
+                  key={`${file.name}-${file.size}`}
+                  className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[var(--border)] bg-black"
+                >
                   <Image
                     src={url}
                     alt={file.name}

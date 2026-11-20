@@ -1,0 +1,13 @@
+# Keep LF in the working copy on every OS so Prettier's check (endOfLine: lf) passes on Windows too.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.otf binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary

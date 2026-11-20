@@ -34,9 +34,7 @@ export function LoginForm() {
             required
           />
         </div>
-        {!state.success ? (
-          <p className="text-sm text-[var(--danger)]">{state.message}</p>
-        ) : null}
+        {!state.success ? <p className="text-sm text-[var(--danger)]">{state.message}</p> : null}
         <button
           type="submit"
           disabled={pending}

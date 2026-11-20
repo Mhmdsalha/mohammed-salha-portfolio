@@ -37,8 +37,8 @@ export function getProjectTitle(project: Project, locale: "ar" | "en") {
 
 export function getProjectDescription(project: Project, locale: "ar" | "en") {
   return locale === "ar"
-    ? project.description_ar ?? project.description_en ?? ""
-    : project.description_en ?? project.description_ar ?? "";
+    ? (project.description_ar ?? project.description_en ?? "")
+    : (project.description_en ?? project.description_ar ?? "");
 }
 
 export async function getProjectBySlug(slug: string) {

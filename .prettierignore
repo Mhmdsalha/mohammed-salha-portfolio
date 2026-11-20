@@ -1,0 +1,10 @@
+.claude
+.next
+out
+dist
+coverage
+node_modules
+package-lock.json
+public
+docs/design
+next-env.d.ts

@@ -17,8 +17,8 @@ export function ProjectCardFeatured({
   const title = locale === "ar" ? project.title_ar : project.title_en;
   const description =
     locale === "ar"
-      ? project.description_ar ?? project.description_en ?? ""
-      : project.description_en ?? project.description_ar ?? "";
+      ? (project.description_ar ?? project.description_en ?? "")
+      : (project.description_en ?? project.description_ar ?? "");
 
   return (
     <GlassCard
@@ -36,7 +36,10 @@ export function ProjectCardFeatured({
         </p>
         <div className="mt-7 flex flex-wrap gap-2">
           {project.tags.map((tag) => (
-            <span key={tag} className="rounded-full border border-[var(--border)] bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[var(--text-secondary)]">
+            <span
+              key={tag}
+              className="rounded-full border border-[var(--border)] bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[var(--text-secondary)]"
+            >
               {tag}
             </span>
           ))}
@@ -67,7 +70,11 @@ export function ProjectCardFeatured({
         </div>
       </div>
       <div className="order-1 lg:order-2">
-        <ProjectVisual title={title} imageUrl={project.thumbnail_url ?? project.images[0]} featured />
+        <ProjectVisual
+          title={title}
+          imageUrl={project.thumbnail_url ?? project.images[0]}
+          featured
+        />
       </div>
     </GlassCard>
   );

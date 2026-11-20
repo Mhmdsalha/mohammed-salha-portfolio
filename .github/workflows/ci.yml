@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, format, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'next.config.ts') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      # QA gate 1: `next build` with zero warnings. Next exits 0 on warnings, so grep for its ⚠ marker.
+      # "No build cache found" is a CI notice on a cold runner, not a code warning, so it is exempt.
+      - name: Build
+        shell: bash
+        run: |
+          npm run build 2>&1 | tee build.log
+          if grep "⚠" build.log | grep -v "No build cache found" > warnings.log; then
+            echo "::error::next build printed warnings (QA gate 1 requires zero):"
+            cat warnings.log
+            exit 1
+          fi
+        env:
+          NEXT_TELEMETRY_DISABLED: 1

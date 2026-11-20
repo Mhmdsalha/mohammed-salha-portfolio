@@ -45,7 +45,10 @@ export async function updateSiteSettings(data: unknown) {
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const field = issue?.path.join(".") || "contact fields";
-    return { success: false, message: `Please check ${field}: ${issue?.message ?? "invalid value"}` };
+    return {
+      success: false,
+      message: `Please check ${field}: ${issue?.message ?? "invalid value"}`
+    };
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
