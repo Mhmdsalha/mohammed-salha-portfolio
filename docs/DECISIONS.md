@@ -131,6 +131,17 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 - **Middleware rewrite** also removed the dead branch from audit C1 (part of P0-3).
 - **E2E proof:** Vitest covers the middleware (8 forged-token variants), every exported action without and with forged sessions (a missing guard fails the test), a 30-request parallel burst, the store's error handling, and the migration SQL itself, run in PGlite (real Postgres in WASM) including role permissions. HTTP probes against a production build confirmed both layers: forged cookies on dashboard pages get a 307 to login with the cookie cleared; a server action POSTed to a public route is forwarded by Next to its dashboard page, where the middleware stops it before it runs. The Playwright version of the "Attacker" path lands with P0-2, which sets Playwright up.
 
+## D-021 Design tokens and fonts (P2-1) — Accepted (2026-11-20)
+
+Numbered D-021 because D-019 and D-020 are on open branches (P0-2, P0-3).
+
+- **Tokens** live in one `@theme static` block at the top of `src/app/globals.css`, using the names from `docs/design/SPEC.md` §1: `--color-paper`, `--color-ink`, `--color-accent`, etc.; `--font-display` / `--font-body` / `--font-label`; a named type scale (`text-hero`, `text-section`, `text-statement`, `text-contact`, `text-wordmark`, `text-slide-title`, `text-row-title`, `text-rotator`, `text-closing`, `text-lead`, each with its line-height); `max-w-page`, `px-gutter`, `py-section`; `rounded-frame/tile/tab/box`; `ease-reveal/sweep/pop`. `static` keeps every token as a CSS variable even before a utility uses it.
+- **No clashes with the old site:** every name is new (the old `--neon`, `--bg-*`, `--radius-card`, `font-mono` stay untouched), so today's site looks the same until each P4 section replaces its old component. The old block in `globals.css` is marked and goes with the last P4 ticket.
+- **Fonts:** `src/app/fonts.ts` loads Alexandria (500–900), IBM Plex Sans Arabic (400–700) and IBM Plex Mono (500) with `next/font/google`, Arabic + Latin subsets, `display: swap` and metric-matched fallbacks. Their variables are set on `<html>`. **`preload: false`** for now, so the current site does not download fonts it does not use; P4-2 turns preload on for the hero's families. The three local fonts in `public/fonts/` stay until the old components that use them are gone.
+- **Enforcement:** `npm run lint` also runs `scripts/design-tokens.mjs`, which fails on a hex/rgb/hsl/oklch colour or a font name in any `src/**/*.{ts,tsx,css}` file other than `globals.css` and `fonts.ts`. The 20 old-site files that already break the rule are listed in `scripts/design-tokens-legacy.json`; the check also fails when a listed file becomes clean or is deleted, so the list only shrinks. Unit-tested in `tests/unit/design-tokens.test.ts`.
+- **CLS 0:** no element uses the new fonts yet, so CLS is unchanged by this ticket (baseline 0.001 / 0.008). It is measured again when P4-2 first applies them.
+- **Layout ownership:** `src/app/layout.tsx` (A4, D-010) only gains the font-variable class on `<html>`; P3-2 restructures it.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Content-Security-Policy and security headers in `next.config.ts` (A1).

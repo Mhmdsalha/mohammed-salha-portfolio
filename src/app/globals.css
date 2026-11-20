@@ -1,5 +1,77 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens for the Editorial (CV version) design: docs/design/SPEC.md (P2-1).
+ * This is the only file allowed to hold colour values and font names (`npm run lint` checks it).
+ * `static` keeps every token as a CSS variable even before a utility uses it, so keyframes and
+ * plain CSS can read them too. Names are new on purpose: the old site's variables below stay
+ * untouched until the P4 sections replace the old components.
+ */
+@theme static {
+  /* Colour: light editorial palette */
+  --color-paper: #f3efe7;
+  --color-paper-raised: #fbf9f5;
+  --color-paper-sunk: #e8e2d6;
+  --color-line: #cfc6b8;
+  --color-ink: #141414;
+  --color-ink-2: #3b3833;
+  --color-ink-3: #4a453e;
+  --color-ink-4: #5a554d;
+  --color-ink-5: #6b655c;
+  --color-night-2: #24221f;
+  --color-night-3: #3a3833;
+  --color-night-muted: #a8a399;
+  --color-night-label: #c9c2b6;
+  --color-night-hover: #d9d2c5;
+  --color-accent: #c8302a;
+  --color-on-accent: #ffffff;
+
+  /* Type families (loaded with next/font in src/app/fonts.ts) */
+  --font-display: var(--font-alexandria), "Segoe UI", system-ui, sans-serif;
+  --font-body: var(--font-plex-arabic), "Segoe UI", system-ui, sans-serif;
+  --font-label: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Type scale. Arabic display text keeps line-height >= 1.15 and no letter-spacing (R3). */
+  --text-wordmark: clamp(56px, 14vw, 220px);
+  --text-wordmark--line-height: 1.3;
+  --text-contact: clamp(44px, 9vw, 150px);
+  --text-contact--line-height: 1.2;
+  --text-statement: clamp(52px, 8vw, 124px);
+  --text-statement--line-height: 1.15;
+  --text-hero: clamp(40px, 5.8vw, 88px);
+  --text-hero--line-height: 1.2;
+  --text-section: clamp(36px, 5.4vw, 76px);
+  --text-section--line-height: 1.2;
+  --text-slide-title: clamp(30px, 3.4vw, 46px);
+  --text-slide-title--line-height: 1.3;
+  --text-row-title: clamp(24px, 3vw, 40px);
+  --text-row-title--line-height: 1.35;
+  --text-rotator: clamp(22px, 3vw, 40px);
+  --text-rotator--line-height: 1.35;
+  --text-closing: clamp(24px, 2.8vw, 38px);
+  --text-closing--line-height: 1.7;
+  --text-lead: clamp(16px, 1.6vw, 19px);
+  --text-lead--line-height: 1.9;
+
+  /* Layout */
+  --container-page: 1280px;
+  --spacing-gutter: clamp(16px, 4vw, 32px);
+  --spacing-section: clamp(64px, 9vw, 120px);
+
+  /* Radii */
+  --radius-frame: 24px;
+  --radius-tile: 20px;
+  --radius-tab: 16px;
+  --radius-box: 14px;
+
+  /* Easing */
+  --ease-reveal: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-sweep: cubic-bezier(0.7, 0, 0.2, 1);
+  --ease-pop: cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+/* ---- Old site styles below: removed as P4 replaces each section (D-021). ---- */
+
 @font-face {
   font-family: "OpificioSite";
   src: url("/fonts/Opificio_Bold.ttf") format("truetype");

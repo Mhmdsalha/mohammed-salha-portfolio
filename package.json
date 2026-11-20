@@ -10,7 +10,7 @@
     "build": "next build",
     "postbuild": "node scripts/check-build.mjs",
     "start": "next start",
-    "lint": "eslint --max-warnings=0",
+    "lint": "eslint --max-warnings=0 && node scripts/design-tokens.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

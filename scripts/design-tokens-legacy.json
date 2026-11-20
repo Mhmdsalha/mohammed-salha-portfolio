@@ -1,0 +1,25 @@
+{
+  "note": "Old-site files that still hold raw colours or font names (P2-1, D-021). Each is replaced by a P4 or D5 ticket; delete its line then. Never add new files.",
+  "files": [
+    "src/app/[locale]/projects/[slug]/page.tsx",
+    "src/app/layout.tsx",
+    "src/components/dashboard/ImageUploader.tsx",
+    "src/components/dashboard/LoginForm.tsx",
+    "src/components/dashboard/ProjectForm.tsx",
+    "src/components/dashboard/ProjectTable.tsx",
+    "src/components/dashboard/SettingsForm.tsx",
+    "src/components/dashboard/Sidebar.tsx",
+    "src/components/layout/Footer.tsx",
+    "src/components/layout/Header.tsx",
+    "src/components/projects/FeaturedProjectsCarousel.tsx",
+    "src/components/projects/LivePreviewFrame.tsx",
+    "src/components/projects/ProjectVisual.tsx",
+    "src/components/sections/AboutSection.tsx",
+    "src/components/sections/ContactSection.tsx",
+    "src/components/sections/HeroSection.tsx",
+    "src/components/ui/Background.tsx",
+    "src/components/ui/LanguageSwitcher.tsx",
+    "src/components/ui/NeonButton.tsx",
+    "src/components/ui/TagPill.tsx"
+  ]
+}
