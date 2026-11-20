@@ -6,5 +6,5 @@ coverage
 node_modules
 package-lock.json
 public
-docs
+docs/design
 next-env.d.ts
