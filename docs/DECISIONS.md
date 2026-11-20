@@ -140,6 +140,22 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 - **Attacker path in a browser:** `e2e/security.spec.ts` checks forged cookies (legacy constant, `alg:none`, garbage) and no cookie on three dashboard routes, plus the locale-prefixed redirect. It makes no login attempts, so it never touches the rate limit and is safe to run against production.
 - **Not in CI yet:** e2e needs a running deployment. Wiring `npm run e2e` to the Vercel preview URL in CI is a follow-up for A6 (backlog).
 
+## D-020 P0-3 scope: what the clean-up removes now and what waits — Accepted (2026-11-20)
+
+Numbered D-020 because D-019 is on the open P0-2 branch.
+
+- **Removed:** the two unused avatar PNGs (3.2 MB) and the unused `LenosGX.ttf` (264 KB); `src/lib/upload.ts` and `src/lib/supabase/client.ts`, the browser anon-key upload path (audit A4) and its only caller; the three Salla stores (Lamsa, Oud, Lolo) from `scripts/seed-projects.mjs` and `src/data/mock-projects.ts`. The dead middleware branch went with D1-1.
+- **`public/` went from 4.7 MB to 1.2 MB, not yet under 300 KB.** What remains is in use by the current site: `mohammed-avatar-hero.png` (1.0 MB, the hero) and three local fonts (189 KB). They go when P4-2 switches the hero to the design's 45 KB WebP (D-016) and P2-1 moves fonts to `next/font`. The 300 KB criterion is checked again after P2-1 and P4-2.
+- **"No salla string in repo" is not met by P0-3 alone**, because the remaining mentions belong to other owners or need a data migration:
+  - Copy in `HeroSection`, `AboutSection`, `ServicesSection`, `ProjectFilter` and the message files (A3/A4): removed when P3-1 and P4 rewrite them.
+  - Site metadata in `src/app/layout.tsx` (A4): P3-3.
+  - The `salla` category in `src/types`, the project Zod schema and the dashboard form, plus the Salla rows in the production database (Lamsa and Lolo are still live on the site): D1-2, together with the category migration (D-002), because dropping the enum before the rows are remapped would break editing those projects. Deleting production rows needs the owner's confirmation.
+  - **Ownership exception (A7 review):** removing `salla` from `ProjectCategory` makes `src/components/projects/ProjectFilter.tsx` (A3; its `Record<Filter, …>` has a `salla` key) and `src/components/dashboard/ProjectForm.tsx` (A5; enum, default value and option) fail to compile. D1-2 may edit only those `salla` references in both files, in the same PR, so typecheck never breaks between tickets.
+  - Mentions in `docs/` are intentional (they describe the rule).
+- **Check:** `git grep -il salla -- src scripts` must be empty once P3-1, P4 and D1-2 are merged. Each follow-up is written into its ticket's acceptance in TASKS.md, and L-2 runs the final check; P0-3 stays "partial" until then.
+- **Unused code outside A1's files**, found in review: `src/components/projects/ProjectCardFeatured.tsx` and `src/components/dashboard/DeleteModal.tsx` have no importers. They go with P4 (A3) and D5-6 (A5).
+- **Risk note:** deleting `upload.ts` removes dead code, not the risk. The anon key is public by design, so only the Storage bucket policies stop anonymous uploads; that check is L-1 (launch checklist).
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
