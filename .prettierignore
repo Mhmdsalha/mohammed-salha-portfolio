@@ -8,3 +8,5 @@ package-lock.json
 public
 docs/design
 next-env.d.ts
+test-results
+playwright-report

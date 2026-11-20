@@ -1,0 +1,50 @@
+{
+  "capturedAt": "2026-11-20T17:30:14.895Z",
+  "tool": "lighthouse 12.8.2, mobile (default), Microsoft Edge headless",
+  "pages": {
+    "/ar": {
+      "url": "https://mohammed-salha-portfolio.vercel.app/ar",
+      "scores": {
+        "performance": 65,
+        "accessibility": 96,
+        "best-practices": 96,
+        "seo": 100
+      },
+      "metrics": {
+        "lcpMs": 2947,
+        "fcpMs": 1647,
+        "tbtMs": 1223,
+        "cls": 0.001,
+        "speedIndexMs": 5559
+      },
+      "transferKB": {
+        "scripts": 122,
+        "total": 372
+      },
+      "lcpElement": "<img alt=\"Mohammed Salha avatar\" width=\"873\" height=\"935\" decoding=\"async\" data-nimg=\"1\" class=\"absolute left-1/2 -bottom-1 h-[calc(100%+8px)] w-auto max-w-none",
+      "failingAudits": ["errors-in-console", "color-contrast", "bf-cache"]
+    },
+    "/en": {
+      "url": "https://mohammed-salha-portfolio.vercel.app/en",
+      "scores": {
+        "performance": 62,
+        "accessibility": 96,
+        "best-practices": 96,
+        "seo": 100
+      },
+      "metrics": {
+        "lcpMs": 3430,
+        "fcpMs": 2499,
+        "tbtMs": 995,
+        "cls": 0.008,
+        "speedIndexMs": 5420
+      },
+      "transferKB": {
+        "scripts": 122,
+        "total": 345
+      },
+      "lcpElement": "<img alt=\"Mohammed Salha avatar\" width=\"873\" height=\"935\" decoding=\"async\" data-nimg=\"1\" class=\"absolute left-1/2 -bottom-1 h-[calc(100%+8px)] w-auto max-w-none",
+      "failingAudits": ["errors-in-console", "color-contrast", "bf-cache"]
+    }
+  }
+}
