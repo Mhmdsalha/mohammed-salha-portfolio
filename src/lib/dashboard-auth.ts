@@ -1,15 +1,2 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-
-export async function hasDashboardSession() {
-  const cookieStore = await cookies();
-  return cookieStore.get("dashboard_token")?.value === "authenticated";
-}
-
-export async function requireDashboardAuth() {
-  const authenticated = await hasDashboardSession();
-
-  if (!authenticated) {
-    redirect("/dashboard/login");
-  }
-}
+// Kept so dashboard pages (owned by A5) need no import changes. New code imports from @/lib/auth/guard.
+export { requireAdminPage as requireDashboardAuth } from "@/lib/auth/guard";

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { hasDashboardSession } from "@/lib/dashboard-auth";
+import { requireAdmin } from "@/lib/auth/guard";
 import { saveSiteSettings } from "@/lib/site-settings";
 
 function normalizeOptional(value: unknown) {
@@ -36,9 +36,8 @@ const settingsSchema = z.object({
 });
 
 export async function updateSiteSettings(data: unknown) {
-  if (!(await hasDashboardSession())) {
-    return { success: false, message: "Unauthorized." };
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   const parsed = settingsSchema.safeParse(data);
 

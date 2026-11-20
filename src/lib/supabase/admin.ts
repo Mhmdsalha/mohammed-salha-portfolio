@@ -16,6 +16,12 @@ type Database = {
         Update: Partial<ProjectInsert>;
         Relationships: [];
       };
+      login_attempts: {
+        Row: { id: number; key_hash: string; attempted_at: string };
+        Insert: { key_hash: string; attempted_at?: string };
+        Update: { key_hash?: string; attempted_at?: string };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
