@@ -46,7 +46,8 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
         <div className="p-10 text-center">
           <p className="font-duran text-3xl font-black text-white">No real projects yet</p>
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[var(--text-secondary)]">
-            Supabase is connected. Add your first project to create a real UUID row and persist edits.
+            Supabase is connected. Add your first project to create a real UUID row and persist
+            edits.
           </p>
           <Link
             href="/dashboard/projects/new"
@@ -56,57 +57,61 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
           </Link>
         </div>
       ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="text-xs uppercase tracking-[0.12em] text-[var(--text-muted)]">
-            <tr>
-              <th className="px-5 py-4">Project</th>
-              <th className="px-5 py-4">Category</th>
-              <th className="px-5 py-4">Featured</th>
-              <th className="px-5 py-4">Order</th>
-              <th className="px-5 py-4">Updated</th>
-              <th className="px-5 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((project) => (
-              <tr key={project.id} className="border-t border-[var(--border)]">
-                <td className="px-5 py-4">
-                  <p className="font-semibold text-white">{project.title_en}</p>
-                  <p className="font-arabic text-xs text-[var(--text-muted)]">{project.title_ar}</p>
-                </td>
-                <td className="px-5 py-4 text-[var(--text-secondary)]">{project.category}</td>
-                <td className="px-5 py-4">
-                  <span className={`rounded-full px-2 py-1 text-xs ${project.featured ? "bg-[rgba(0,245,255,0.12)] text-[var(--neon)]" : "bg-white/[0.04] text-[var(--text-muted)]"}`}>
-                    {project.featured ? "Yes" : "No"}
-                  </span>
-                </td>
-                <td className="px-5 py-4 text-[var(--text-secondary)]">{project.order_num}</td>
-                <td className="px-5 py-4 text-[var(--text-secondary)]">
-                  {new Date(project.updated_at).toLocaleDateString()}
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex justify-end gap-2">
-                    <Link
-                      href={`/dashboard/projects/${project.id}/edit`}
-                      className="focus-ring inline-flex size-9 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-secondary)] hover:text-white"
-                    >
-                      <Edit size={15} />
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(project.id)}
-                      className="focus-ring inline-flex size-9 items-center justify-center rounded-full border border-[rgba(239,68,68,0.24)] text-[var(--danger)] hover:bg-[rgba(239,68,68,0.08)]"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.12em] text-[var(--text-muted)]">
+              <tr>
+                <th className="px-5 py-4">Project</th>
+                <th className="px-5 py-4">Category</th>
+                <th className="px-5 py-4">Featured</th>
+                <th className="px-5 py-4">Order</th>
+                <th className="px-5 py-4">Updated</th>
+                <th className="px-5 py-4 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filtered.map((project) => (
+                <tr key={project.id} className="border-t border-[var(--border)]">
+                  <td className="px-5 py-4">
+                    <p className="font-semibold text-white">{project.title_en}</p>
+                    <p className="font-arabic text-xs text-[var(--text-muted)]">
+                      {project.title_ar}
+                    </p>
+                  </td>
+                  <td className="px-5 py-4 text-[var(--text-secondary)]">{project.category}</td>
+                  <td className="px-5 py-4">
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs ${project.featured ? "bg-[rgba(0,245,255,0.12)] text-[var(--neon)]" : "bg-white/[0.04] text-[var(--text-muted)]"}`}
+                    >
+                      {project.featured ? "Yes" : "No"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-[var(--text-secondary)]">{project.order_num}</td>
+                  <td className="px-5 py-4 text-[var(--text-secondary)]">
+                    {new Date(project.updated_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        href={`/dashboard/projects/${project.id}/edit`}
+                        className="focus-ring inline-flex size-9 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-secondary)] hover:text-white"
+                      >
+                        <Edit size={15} />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(project.id)}
+                        className="focus-ring inline-flex size-9 items-center justify-center rounded-full border border-[rgba(239,68,68,0.24)] text-[var(--danger)] hover:bg-[rgba(239,68,68,0.08)]"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </GlassCard>
   );

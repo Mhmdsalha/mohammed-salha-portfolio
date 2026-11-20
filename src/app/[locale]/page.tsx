@@ -10,11 +10,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Locale } from "@/types";
 
-export default async function PortfolioPage({
-  params
-}: {
-  params: Promise<{ locale: Locale }>;
-}) {
+export default async function PortfolioPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
   const [projects, settings] = await Promise.all([getProjects(), getSiteSettings()]);
 

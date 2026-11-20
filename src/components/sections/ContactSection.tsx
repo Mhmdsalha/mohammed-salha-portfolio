@@ -8,13 +8,7 @@ function hasValue(value: string) {
   return Boolean(value && value.trim() && value !== "#");
 }
 
-export function ContactSection({
-  locale,
-  settings
-}: {
-  locale: Locale;
-  settings: SiteSettings;
-}) {
+export function ContactSection({ locale, settings }: { locale: Locale; settings: SiteSettings }) {
   const isAr = locale === "ar";
   const whatsappDigits = settings.whatsapp.replace(/[^\d]/g, "");
   const socialLinks = [
@@ -48,7 +42,10 @@ export function ContactSection({
             <MessageCircle className="size-9 text-[var(--success)]" />
             <h3 className="mt-6 text-2xl font-semibold text-white">WhatsApp</h3>
             <p className="mt-2 text-[var(--text-secondary)]">{settings.whatsapp}</p>
-            <NeonButton href={whatsappDigits ? `https://wa.me/${whatsappDigits}` : "#"} className="mt-7">
+            <NeonButton
+              href={whatsappDigits ? `https://wa.me/${whatsappDigits}` : "#"}
+              className="mt-7"
+            >
               {isAr ? "أرسل رسالة" : "Send Message"} →
             </NeonButton>
           </GlassCard>
@@ -59,7 +56,11 @@ export function ContactSection({
             <Phone className="size-9 text-[var(--neon)]" />
             <h3 className="mt-6 text-2xl font-semibold text-white">Phone</h3>
             <p className="mt-2 text-[var(--text-secondary)]">{settings.phone}</p>
-            <NeonButton href={`tel:${settings.phone.replace(/[^\d+]/g, "")}`} variant="ghost" className="mt-7">
+            <NeonButton
+              href={`tel:${settings.phone.replace(/[^\d+]/g, "")}`}
+              variant="ghost"
+              className="mt-7"
+            >
               {isAr ? "اتصل الآن" : "Call Now"} →
             </NeonButton>
           </GlassCard>

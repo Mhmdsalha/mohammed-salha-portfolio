@@ -14,8 +14,6 @@ export function GlassCard({
   as: Component = "div"
 }: GlassCardProps) {
   return (
-    <Component className={clsx("glass", hover && "glass-hover", className)}>
-      {children}
-    </Component>
+    <Component className={clsx("glass", hover && "glass-hover", className)}>{children}</Component>
   );
 }

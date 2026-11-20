@@ -8,12 +8,7 @@ type NeonButtonProps = {
   className?: string;
 };
 
-export function NeonButton({
-  href,
-  children,
-  variant = "primary",
-  className
-}: NeonButtonProps) {
+export function NeonButton({ href, children, variant = "primary", className }: NeonButtonProps) {
   return (
     <Link
       href={href}

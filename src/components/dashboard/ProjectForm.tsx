@@ -14,7 +14,10 @@ import { Project, ProjectFormValues } from "@/types";
 const schema = z.object({
   title_en: z.string().min(2, "English title is required."),
   title_ar: z.string().min(2, "Arabic title is required."),
-  slug: z.string().min(2).regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens."),
+  slug: z
+    .string()
+    .min(2)
+    .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens."),
   category: z.enum(["salla", "webapp", "pos", "other"]),
   description_en: z.string(),
   description_ar: z.string(),
@@ -129,7 +132,9 @@ export function ProjectForm({ project }: { project?: Project }) {
         };
       }
 
-      const result = project ? await updateProject(project.id, payload) : await createProject(payload);
+      const result = project
+        ? await updateProject(project.id, payload)
+        : await createProject(payload);
       if (result.success) {
         toast.success(result.message);
         router.push("/dashboard/projects");
@@ -171,7 +176,12 @@ export function ProjectForm({ project }: { project?: Project }) {
             <textarea {...register("description_en")} rows={4} className="field resize-none" />
           </Field>
           <Field label="Description AR" error={errors.description_ar?.message}>
-            <textarea {...register("description_ar")} rows={4} className="field resize-none font-arabic" dir="rtl" />
+            <textarea
+              {...register("description_ar")}
+              rows={4}
+              className="field resize-none font-arabic"
+              dir="rtl"
+            />
           </Field>
         </div>
       </GlassCard>
@@ -222,7 +232,11 @@ export function ProjectForm({ project }: { project?: Project }) {
               className="field"
               placeholder="Type and press Enter"
             />
-            <button type="button" onClick={addTag} className="focus-ring rounded-full border border-[var(--border)] px-4 text-sm text-white">
+            <button
+              type="button"
+              onClick={addTag}
+              className="focus-ring rounded-full border border-[var(--border)] px-4 text-sm text-white"
+            >
               Add
             </button>
           </div>
@@ -249,7 +263,11 @@ export function ProjectForm({ project }: { project?: Project }) {
             <input type="checkbox" {...register("featured")} className="size-5 accent-cyan-300" />
           </label>
           <Field label="Order" error={errors.order_num?.message}>
-            <input type="number" {...register("order_num", { valueAsNumber: true })} className="field" />
+            <input
+              type="number"
+              {...register("order_num", { valueAsNumber: true })}
+              className="field"
+            />
           </Field>
         </div>
       </GlassCard>

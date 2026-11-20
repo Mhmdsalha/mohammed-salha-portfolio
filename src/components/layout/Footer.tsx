@@ -1,12 +1,6 @@
 import { Locale, SiteSettings } from "@/types";
 
-export function Footer({
-  locale,
-  settings
-}: {
-  locale: Locale;
-  settings: SiteSettings;
-}) {
+export function Footer({ locale, settings }: { locale: Locale; settings: SiteSettings }) {
   const isAr = locale === "ar";
 
   return (

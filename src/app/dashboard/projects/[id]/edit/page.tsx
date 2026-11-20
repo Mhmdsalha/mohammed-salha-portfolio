@@ -4,11 +4,7 @@ import { ProjectForm } from "@/components/dashboard/ProjectForm";
 import { requireDashboardAuth } from "@/lib/dashboard-auth";
 import { getProjects } from "@/lib/projects";
 
-export default async function EditProjectPage({
-  params
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   await requireDashboardAuth();
 
   const { id } = await params;

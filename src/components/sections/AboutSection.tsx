@@ -43,12 +43,7 @@ const focusItems = [
   }
 ];
 
-const workflow = [
-  "Discovery",
-  "UI Direction",
-  "Development",
-  "Launch"
-];
+const workflow = ["Discovery", "UI Direction", "Development", "Launch"];
 
 function SkillMeter({ name, value }: { name: string; value: number }) {
   return (
@@ -179,7 +174,10 @@ export function AboutSection({ locale }: { locale: Locale }) {
                 </p>
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {workflow.map((step, index) => (
-                    <div key={step} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                    <div
+                      key={step}
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] p-3"
+                    >
                       <p className="font-mono text-[11px] text-white/40">0{index + 1}</p>
                       <p className="mt-2 text-sm font-semibold text-white">{step}</p>
                     </div>

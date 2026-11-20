@@ -8,21 +8,24 @@ const services = [
     icon: Store,
     titleEn: "Salla Store Design",
     titleAr: "تصميم متاجر سلة",
-    descEn: "Custom Salla storefronts with complete visual identity, responsive sections, and conversion-focused details.",
+    descEn:
+      "Custom Salla storefronts with complete visual identity, responsive sections, and conversion-focused details.",
     descAr: "تصميم متاجر سلة مخصصة بهوية بصرية متكاملة وتفاصيل ترفع جودة تجربة الشراء."
   },
   {
     icon: Code2,
     titleEn: "Web Development",
     titleAr: "تطوير مواقع ويب",
-    descEn: "Modern full-stack applications with fast interfaces, clean architecture, and thoughtful bilingual support.",
+    descEn:
+      "Modern full-stack applications with fast interfaces, clean architecture, and thoughtful bilingual support.",
     descAr: "تطوير تطبيقات ويب حديثة بأداء عال وبنية نظيفة ودعم عربي/إنجليزي مدروس."
   },
   {
     icon: SlidersHorizontal,
     titleEn: "Store Customization",
     titleAr: "تخصيص وتحسين المتاجر",
-    descEn: "Refining existing Salla stores with custom sections, UX fixes, performance improvements, and premium polish.",
+    descEn:
+      "Refining existing Salla stores with custom sections, UX fixes, performance improvements, and premium polish.",
     descAr: "تحسين متاجر سلة الحالية بأقسام مخصصة، إصلاحات تجربة المستخدم، ورفع مستوى الواجهة."
   }
 ];

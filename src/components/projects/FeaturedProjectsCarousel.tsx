@@ -13,8 +13,8 @@ function projectText(project: Project, locale: Locale) {
     title: locale === "ar" ? project.title_ar : project.title_en,
     description:
       locale === "ar"
-        ? project.description_ar ?? project.description_en ?? ""
-        : project.description_en ?? project.description_ar ?? ""
+        ? (project.description_ar ?? project.description_en ?? "")
+        : (project.description_en ?? project.description_ar ?? "")
   };
 }
 

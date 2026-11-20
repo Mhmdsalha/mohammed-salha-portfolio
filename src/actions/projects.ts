@@ -8,7 +8,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const projectSchema = z.object({
   title_en: z.string().min(2),
   title_ar: z.string().min(2),
-  slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
+  slug: z
+    .string()
+    .min(2)
+    .regex(/^[a-z0-9-]+$/),
   category: z.enum(["salla", "webapp", "pos", "other"]),
   description_en: z.string().optional(),
   description_ar: z.string().optional(),
@@ -96,7 +99,9 @@ export async function uploadProjectImages(formData: FormData) {
     await ensureProjectsBucket();
 
     const thumbnail = formData.get("thumbnail");
-    const imageFiles = formData.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
+    const imageFiles = formData
+      .getAll("images")
+      .filter((value): value is File => value instanceof File && value.size > 0);
     const thumbnailUrl =
       thumbnail instanceof File && thumbnail.size > 0
         ? await uploadImageFile(thumbnail, slug, "cover")

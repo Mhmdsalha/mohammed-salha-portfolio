@@ -14,13 +14,7 @@ const filterLabels: Record<Filter, { en: string; ar: string }> = {
   other: { en: "Other", ar: "أخرى" }
 };
 
-export function ProjectFilter({
-  projects,
-  locale
-}: {
-  projects: Project[];
-  locale: Locale;
-}) {
+export function ProjectFilter({ projects, locale }: { projects: Project[]; locale: Locale }) {
   const [filter, setFilter] = useState<Filter>("all");
   const filtered = useMemo(
     () => (filter === "all" ? projects : projects.filter((project) => project.category === filter)),
