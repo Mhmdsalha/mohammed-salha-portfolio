@@ -1,43 +1,54 @@
-import type { AttemptStore } from "@/lib/auth/rate-limit";
+import type { AttemptCounts, AttemptStore } from "@/lib/auth/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const RETENTION_MS = 24 * 60 * 60 * 1000;
+type RpcClient = {
+  rpc(
+    fn: "register_login_attempt",
+    args: { p_key_hash: string; p_window_seconds: number }
+  ): PromiseLike<{ data: unknown; error: unknown }>;
+  from(table: "login_attempts"): {
+    delete(): { eq(column: "key_hash", value: string): PromiseLike<{ error: unknown }> };
+  };
+};
 
-/** Failed-login store in the `login_attempts` table (supabase/migrations/0001_login_attempts.sql). */
-export function createSupabaseAttemptStore(): AttemptStore {
-  const supabase = createAdminClient();
+/** Validates the RPC result strictly: anything unexpected is an error, never "zero attempts". */
+export function parseAttemptCounts(data: unknown): AttemptCounts {
+  const row = Array.isArray(data) ? data[0] : null;
+  const keyCount = row?.key_count;
+  const globalCount = row?.global_count;
 
+  if (!Number.isInteger(keyCount) || !Number.isInteger(globalCount) || keyCount < 1) {
+    throw new Error(
+      `register_login_attempt returned an unexpected result: ${JSON.stringify(data)}`
+    );
+  }
+
+  return { keyCount, globalCount };
+}
+
+/**
+ * Store backed by `login_attempts` and the `register_login_attempt` function
+ * (supabase/migrations/0001_login_attempts.sql). A missing table or function makes PostgREST
+ * return an error, which `register` rethrows, so login fails closed.
+ */
+export function createSupabaseAttemptStore(
+  client: RpcClient = createAdminClient() as unknown as RpcClient
+): AttemptStore {
   return {
-    async countFailuresSince(keyHash, since) {
-      const { count, error } = await supabase
-        .from("login_attempts")
-        .select("id", { count: "exact", head: true })
-        .eq("key_hash", keyHash)
-        .gte("attempted_at", since.toISOString());
+    async register(keyHash, windowSeconds) {
+      const { data, error } = await client.rpc("register_login_attempt", {
+        p_key_hash: keyHash,
+        p_window_seconds: windowSeconds
+      });
 
       if (error) {
         throw error;
       }
 
-      return count ?? 0;
-    },
-    async recordFailure(keyHash, at) {
-      const { error } = await supabase
-        .from("login_attempts")
-        .insert({ key_hash: keyHash, attempted_at: at.toISOString() });
-
-      if (error) {
-        throw error;
-      }
-
-      // Keep the table small: drop rows older than a day. Failure here is not fatal.
-      await supabase
-        .from("login_attempts")
-        .delete()
-        .lt("attempted_at", new Date(at.getTime() - RETENTION_MS).toISOString());
+      return parseAttemptCounts(data);
     },
     async clear(keyHash) {
-      const { error } = await supabase.from("login_attempts").delete().eq("key_hash", keyHash);
+      const { error } = await client.from("login_attempts").delete().eq("key_hash", keyHash);
 
       if (error) {
         throw error;

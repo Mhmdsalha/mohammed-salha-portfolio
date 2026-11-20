@@ -1,16 +1,31 @@
 // Prints the dashboard auth env values (docs/DECISIONS.md D-006, D-007).
 // Usage: node scripts/hash-password.mjs   then type the password and press Enter.
-// The password is read from stdin so it never lands in shell history.
+// The password is read from a hidden prompt so it never lands in shell history or on screen.
 import { randomBytes } from "node:crypto";
-import { createInterface } from "node:readline/promises";
+import { createInterface } from "node:readline";
 import bcrypt from "bcryptjs";
 
-const rl = createInterface({ input: process.stdin, output: process.stderr });
-const password = (await rl.question("Dashboard password (12+ characters): ")).trim();
-rl.close();
+function askHidden(question) {
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+    process.stderr.write(question);
+    // Swallow the echo of typed characters; the prompt itself was already written.
+    rl._writeToOutput = () => {};
+    rl.question("", (answer) => {
+      rl.close();
+      process.stderr.write("\n");
+      resolve(answer);
+    });
+  });
+}
 
-if (password.length < 12) {
-  console.error("Use at least 12 characters.");
+// Not trimmed: login compares the exact string, so spaces must count here too.
+const password = await askHidden("Dashboard password (12-72 bytes): ");
+const bytes = Buffer.byteLength(password, "utf8");
+
+if (bytes < 12 || bytes > 72) {
+  // bcrypt ignores everything past 72 bytes, so longer passwords would be silently truncated.
+  console.error(`Use between 12 and 72 bytes (got ${bytes}).`);
   process.exit(1);
 }
 

@@ -1,4 +1,4 @@
-import { SignJWT } from "jose";
+import { SignJWT } from "jose/jwt/sign";
 import { SESSION_TTL_SECONDS, createSessionToken, getSessionKey } from "@/lib/auth/session";
 
 export const TEST_SECRET = "test-secret-that-is-at-least-32-characters-long";
@@ -35,6 +35,12 @@ export async function forgedTokens(): Promise<Record<string, string>> {
       .setSubject("visitor")
       .setIssuedAt(now)
       .setExpirationTime(now + 3600)
+      .sign(key),
+    "correctly signed but older than 8 h, with a far exp": await new SignJWT({})
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("admin")
+      .setIssuedAt(now - SESSION_TTL_SECONDS - 60)
+      .setExpirationTime(now + 365 * 24 * 60 * 60)
       .sign(key),
     "empty string": ""
   };

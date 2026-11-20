@@ -1,5 +1,6 @@
 // Edge-safe: imported by middleware.ts. Only jose and Web APIs here, no Node built-ins.
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT } from "jose/jwt/sign";
+import { jwtVerify } from "jose/jwt/verify";
 
 export const SESSION_COOKIE = "dashboard_session";
 /** The old forgeable cookie (`dashboard_token=authenticated`). Never trusted; only cleared. */
@@ -51,7 +52,11 @@ export async function verifySessionToken(
     const { payload } = await jwtVerify(token, key, {
       algorithms: [ALGORITHM],
       subject: SUBJECT,
-      requiredClaims: ["iat", "exp"]
+      requiredClaims: ["iat", "exp"],
+      // Defence in depth: even a correctly signed token is refused once it is older than 8 h,
+      // whatever its exp says.
+      maxTokenAge: SESSION_TTL_SECONDS,
+      clockTolerance: 5
     });
 
     return { sub: SUBJECT, iat: payload.iat as number, exp: payload.exp as number };

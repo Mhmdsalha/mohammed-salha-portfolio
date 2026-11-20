@@ -1,62 +1,68 @@
 import { createHash } from "node:crypto";
 
-export const LOGIN_MAX_FAILURES = 5;
-export const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+/** Attempts allowed per client within the window; the next one is refused. */
+export const LOGIN_MAX_ATTEMPTS = 5;
+/** Attempts allowed from all clients together within the window (stops IP rotation). */
+export const LOGIN_GLOBAL_MAX_ATTEMPTS = 100;
+export const LOGIN_WINDOW_SECONDS = 15 * 60;
 
-/** Where failed attempts are counted. Production uses Supabase; tests use memory. */
+/** Bucket used when the client IP cannot be trusted (anywhere but Vercel). */
+export const SHARED_BUCKET = "shared";
+
+export type AttemptCounts = { keyCount: number; globalCount: number };
+
+/**
+ * Where attempts are counted. `register` must record the attempt and return counts that include
+ * it atomically, so parallel requests cannot all see a count under the limit.
+ */
 export type AttemptStore = {
-  countFailuresSince(keyHash: string, since: Date): Promise<number>;
-  recordFailure(keyHash: string, at: Date): Promise<void>;
+  register(keyHash: string, windowSeconds: number): Promise<AttemptCounts>;
   clear(keyHash: string): Promise<void>;
 };
 
-/** IPs are stored only as salted SHA-256 hashes. */
+/** IPs are stored only as salted SHA-256 hashes. Rotating SESSION_SECRET resets every bucket. */
 export function hashClientKey(ip: string, salt = process.env.SESSION_SECRET ?? ""): string {
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
 }
 
 /**
- * Vercel sets x-real-ip and overwrites x-forwarded-for, so a client cannot spoof either there.
- * Elsewhere the first x-forwarded-for hop is the best available signal.
+ * Vercel sets x-real-ip / x-forwarded-for itself, so clients cannot spoof them there. Anywhere else
+ * (next start, Docker, another proxy) they are client-controlled, so every client shares one
+ * bucket instead of picking its own.
  */
-export function getClientIp(headers: Headers): string {
+export function getClientIp(headers: Headers, onVercel = process.env.VERCEL === "1"): string {
+  if (!onVercel) {
+    return SHARED_BUCKET;
+  }
+
   const realIp = headers.get("x-real-ip")?.trim();
   if (realIp) {
     return realIp;
   }
 
   const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || "unknown";
+  return forwarded || SHARED_BUCKET;
 }
 
-export function createLoginLimiter(store: AttemptStore, now: () => Date = () => new Date()) {
-  return {
-    async isBlocked(keyHash: string): Promise<boolean> {
-      const since = new Date(now().getTime() - LOGIN_WINDOW_MS);
-      const failures = await store.countFailuresSince(keyHash, since);
-      return failures >= LOGIN_MAX_FAILURES;
-    },
-    async recordFailure(keyHash: string): Promise<void> {
-      await store.recordFailure(keyHash, now());
-    },
-    async recordSuccess(keyHash: string): Promise<void> {
-      await store.clear(keyHash);
-    }
-  };
+export function isOverLimit({ keyCount, globalCount }: AttemptCounts): boolean {
+  return keyCount > LOGIN_MAX_ATTEMPTS || globalCount > LOGIN_GLOBAL_MAX_ATTEMPTS;
 }
 
-export function createMemoryAttemptStore(): AttemptStore {
-  const attempts = new Map<string, Date[]>();
+/** In-memory store for tests and local reasoning. Not shared between server instances. */
+export function createMemoryAttemptStore(now: () => number = () => Date.now()): AttemptStore {
+  let attempts: { keyHash: string; at: number }[] = [];
 
   return {
-    async countFailuresSince(keyHash, since) {
-      return (attempts.get(keyHash) ?? []).filter((at) => at >= since).length;
-    },
-    async recordFailure(keyHash, at) {
-      attempts.set(keyHash, [...(attempts.get(keyHash) ?? []), at]);
+    async register(keyHash, windowSeconds) {
+      const since = now() - windowSeconds * 1000;
+      attempts = [...attempts.filter((a) => a.at > since), { keyHash, at: now() }];
+      return {
+        keyCount: attempts.filter((a) => a.keyHash === keyHash).length,
+        globalCount: attempts.length
+      };
     },
     async clear(keyHash) {
-      attempts.delete(keyHash);
+      attempts = attempts.filter((a) => a.keyHash !== keyHash);
     }
   };
 }

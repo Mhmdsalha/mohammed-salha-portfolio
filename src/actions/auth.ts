@@ -3,8 +3,9 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSupabaseAttemptStore } from "@/lib/auth/attempt-store";
+import { attemptLogin, type LoginOutcome } from "@/lib/auth/login";
 import { verifyDashboardPassword } from "@/lib/auth/password";
-import { createLoginLimiter, getClientIp, hashClientKey } from "@/lib/auth/rate-limit";
+import { getClientIp, hashClientKey, type AttemptStore } from "@/lib/auth/rate-limit";
 import {
   LEGACY_SESSION_COOKIE,
   SESSION_COOKIE,
@@ -15,9 +16,11 @@ import {
 
 type LoginState = { success: boolean; message: string };
 
-const INVALID = { success: false, message: "Invalid password." };
-const TOO_MANY = { success: false, message: "Too many attempts. Try again in 15 minutes." };
-const UNAVAILABLE = { success: false, message: "Login is unavailable. Try again later." };
+const MESSAGES: Record<Exclude<LoginOutcome, "ok">, LoginState> = {
+  invalid: { success: false, message: "Invalid password." },
+  blocked: { success: false, message: "Too many attempts. Try again in 15 minutes." },
+  unavailable: { success: false, message: "Login is unavailable. Try again later." }
+};
 
 async function clearSessionCookies() {
   const cookieStore = await cookies();
@@ -26,42 +29,30 @@ async function clearSessionCookies() {
 }
 
 export async function loginAction(_previousState: LoginState, formData: FormData) {
-  const password = String(formData.get("password") ?? "");
   const key = getSessionKey();
 
   if (!key) {
     console.error("SESSION_SECRET is missing or shorter than 32 characters; login is disabled.");
-    return UNAVAILABLE;
+    return MESSAGES.unavailable;
   }
 
-  const clientKey = hashClientKey(getClientIp(await headers()));
-  let limiter: ReturnType<typeof createLoginLimiter>;
-
+  let store: AttemptStore;
   try {
-    limiter = createLoginLimiter(createSupabaseAttemptStore());
-
-    if (await limiter.isBlocked(clientKey)) {
-      return TOO_MANY;
-    }
+    store = createSupabaseAttemptStore();
   } catch (error) {
-    // Without the rate-limit store the password could be brute-forced, so fail closed.
     console.error("Login rate limiter unavailable:", error);
-    return UNAVAILABLE;
+    return MESSAGES.unavailable;
   }
 
-  if (!(await verifyDashboardPassword(password))) {
-    try {
-      await limiter.recordFailure(clientKey);
-    } catch (error) {
-      console.error("Could not record failed login:", error);
-    }
-    return INVALID;
-  }
+  const outcome = await attemptLogin({
+    password: String(formData.get("password") ?? ""),
+    keyHash: hashClientKey(getClientIp(await headers())),
+    store,
+    verify: verifyDashboardPassword
+  });
 
-  try {
-    await limiter.recordSuccess(clientKey);
-  } catch (error) {
-    console.error("Could not clear failed logins:", error);
+  if (outcome !== "ok") {
+    return MESSAGES[outcome];
   }
 
   await clearSessionCookies();

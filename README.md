@@ -36,7 +36,7 @@ Generate the two dashboard values (the password is read from the prompt, not the
 node scripts/hash-password.mjs
 ```
 
-`DASHBOARD_PASSWORD_HASH` is the bcrypt hash encoded as base64, because Next.js expands `$` in `.env` files and would corrupt a raw hash. `SESSION_SECRET` signs the 8-hour dashboard session cookie; changing it signs everyone out. Without either value, or without the `login_attempts` table, dashboard login stays disabled (it fails closed). The old `DASHBOARD_PASSWORD` variable is no longer read; delete it.
+`DASHBOARD_PASSWORD_HASH` is the bcrypt hash encoded as base64, because Next.js expands `$` in `.env` files and would corrupt a raw hash. `SESSION_SECRET` signs the 8-hour dashboard session cookie; changing it signs everyone out (sessions are stateless, so logging out only clears your own cookie). Without either value, or without the `0001_login_attempts.sql` migration, dashboard login stays disabled (it fails closed). The old `DASHBOARD_PASSWORD` variable is no longer read; delete it.
 
 `SUPABASE_SERVICE_ROLE_KEY` is required for dashboard writes, image uploads, and editable contact settings. Keep it secret and never expose it in client code.
 
@@ -81,7 +81,7 @@ Create a public Storage bucket named `projects`.
 
 The dashboard contact settings are stored automatically in a Supabase Storage bucket named `site-settings` as `settings.json`.
 
-Apply the SQL files in `supabase/migrations/` in name order (Supabase SQL editor or `supabase db push`). `0001_login_attempts.sql` creates the table behind the dashboard login rate limit (5 failed attempts per 15 minutes per IP).
+Apply the SQL files in `supabase/migrations/` in name order (Supabase SQL editor or `supabase db push`). `0001_login_attempts.sql` creates the table and function behind the dashboard login rate limit: 5 attempts per 15 minutes per IP (on Vercel), and 100 per 15 minutes from all clients together.
 
 ## Seed Projects
 

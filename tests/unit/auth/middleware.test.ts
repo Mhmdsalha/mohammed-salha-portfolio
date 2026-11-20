@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { middleware } from "../../../middleware";
+import { middleware } from "@/middleware";
 import { TEST_SECRET, forgedTokens, validToken } from "./helpers";
 
 function request(path: string, cookie?: string) {

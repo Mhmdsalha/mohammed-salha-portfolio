@@ -26,7 +26,11 @@ export async function verifyDashboardPassword(
   const hash = decodePasswordHash(encodedHash);
 
   if (!hash) {
-    console.error("DASHBOARD_PASSWORD_HASH is missing or invalid; dashboard login is disabled.");
+    console.error(
+      encodedHash?.trim().startsWith("$2")
+        ? "DASHBOARD_PASSWORD_HASH looks like a raw bcrypt hash; base64-encode it (node scripts/hash-password.mjs). Dashboard login is disabled."
+        : "DASHBOARD_PASSWORD_HASH is missing or invalid; dashboard login is disabled."
+    );
     await bcrypt.compare(password, DUMMY_HASH);
     return false;
   }

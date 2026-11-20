@@ -1,70 +1,68 @@
 import { describe, expect, it } from "vitest";
 import {
-  LOGIN_MAX_FAILURES,
-  LOGIN_WINDOW_MS,
-  createLoginLimiter,
+  LOGIN_GLOBAL_MAX_ATTEMPTS,
+  LOGIN_MAX_ATTEMPTS,
+  LOGIN_WINDOW_SECONDS,
+  SHARED_BUCKET,
   createMemoryAttemptStore,
   getClientIp,
-  hashClientKey
+  hashClientKey,
+  isOverLimit
 } from "@/lib/auth/rate-limit";
 
-function setup() {
-  let now = new Date("2026-11-20T12:00:00Z");
-  const limiter = createLoginLimiter(createMemoryAttemptStore(), () => now);
-  return {
-    limiter,
-    advance(ms: number) {
-      now = new Date(now.getTime() + ms);
-    }
-  };
-}
-
-describe("login rate limit", () => {
-  it("allows 5 failed attempts and blocks the 6th", async () => {
-    const { limiter } = setup();
-
-    for (let attempt = 1; attempt <= LOGIN_MAX_FAILURES; attempt++) {
-      expect(await limiter.isBlocked("ip-a"), `attempt ${attempt}`).toBe(false);
-      await limiter.recordFailure("ip-a");
-    }
-
-    expect(await limiter.isBlocked("ip-a")).toBe(true);
+describe("isOverLimit", () => {
+  it("allows 5 attempts per client and refuses the 6th", () => {
+    expect(isOverLimit({ keyCount: LOGIN_MAX_ATTEMPTS, globalCount: 5 })).toBe(false);
+    expect(isOverLimit({ keyCount: LOGIN_MAX_ATTEMPTS + 1, globalCount: 6 })).toBe(true);
   });
 
-  it("counts each client separately", async () => {
-    const { limiter } = setup();
-    for (let i = 0; i < LOGIN_MAX_FAILURES; i++) await limiter.recordFailure("ip-a");
+  it("refuses everyone once the global limit is passed (IP rotation)", () => {
+    expect(isOverLimit({ keyCount: 1, globalCount: LOGIN_GLOBAL_MAX_ATTEMPTS + 1 })).toBe(true);
+  });
+});
 
-    expect(await limiter.isBlocked("ip-b")).toBe(false);
+describe("memory attempt store", () => {
+  it("counts per client and globally, including the attempt being registered", async () => {
+    const store = createMemoryAttemptStore();
+    expect(await store.register("a", LOGIN_WINDOW_SECONDS)).toEqual({
+      keyCount: 1,
+      globalCount: 1
+    });
+    expect(await store.register("a", LOGIN_WINDOW_SECONDS)).toEqual({
+      keyCount: 2,
+      globalCount: 2
+    });
+    expect(await store.register("b", LOGIN_WINDOW_SECONDS)).toEqual({
+      keyCount: 1,
+      globalCount: 3
+    });
   });
 
-  it("unblocks once the 15-minute window has passed", async () => {
-    const { limiter, advance } = setup();
-    for (let i = 0; i < LOGIN_MAX_FAILURES; i++) await limiter.recordFailure("ip-a");
-
-    advance(LOGIN_WINDOW_MS - 1000);
-    expect(await limiter.isBlocked("ip-a")).toBe(true);
-    advance(2000);
-    expect(await limiter.isBlocked("ip-a")).toBe(false);
-  });
-
-  it("clears failures after a successful login", async () => {
-    const { limiter } = setup();
-    for (let i = 0; i < LOGIN_MAX_FAILURES - 1; i++) await limiter.recordFailure("ip-a");
-
-    await limiter.recordSuccess("ip-a");
-    await limiter.recordFailure("ip-a");
-    expect(await limiter.isBlocked("ip-a")).toBe(false);
+  it("forgets attempts outside the window and after clear", async () => {
+    let now = 0;
+    const store = createMemoryAttemptStore(() => now);
+    await store.register("a", LOGIN_WINDOW_SECONDS);
+    now += LOGIN_WINDOW_SECONDS * 1000 + 1;
+    expect((await store.register("a", LOGIN_WINDOW_SECONDS)).keyCount).toBe(1);
+    await store.clear("a");
+    expect((await store.register("a", LOGIN_WINDOW_SECONDS)).keyCount).toBe(1);
   });
 });
 
 describe("client key", () => {
-  it("prefers x-real-ip, then the first x-forwarded-for hop", () => {
-    expect(getClientIp(new Headers({ "x-real-ip": "1.1.1.1", "x-forwarded-for": "2.2.2.2" }))).toBe(
-      "1.1.1.1"
+  const headers = new Headers({ "x-real-ip": "1.1.1.1", "x-forwarded-for": "2.2.2.2, 10.0.0.1" });
+
+  it("on Vercel, prefers x-real-ip, then the first x-forwarded-for hop", () => {
+    expect(getClientIp(headers, true)).toBe("1.1.1.1");
+    expect(getClientIp(new Headers({ "x-forwarded-for": "2.2.2.2, 10.0.0.1" }), true)).toBe(
+      "2.2.2.2"
     );
-    expect(getClientIp(new Headers({ "x-forwarded-for": "2.2.2.2, 10.0.0.1" }))).toBe("2.2.2.2");
-    expect(getClientIp(new Headers())).toBe("unknown");
+    expect(getClientIp(new Headers(), true)).toBe(SHARED_BUCKET);
+  });
+
+  it("off Vercel, ignores spoofable headers and uses one shared bucket", () => {
+    expect(getClientIp(headers, false)).toBe(SHARED_BUCKET);
+    expect(getClientIp(new Headers({ "x-real-ip": "203.0.113.77" }), false)).toBe(SHARED_BUCKET);
   });
 
   it("stores a salted hash, never the raw IP", () => {
