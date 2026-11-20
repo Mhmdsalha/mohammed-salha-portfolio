@@ -28,56 +28,56 @@ Rebuild `mohammed-salha-portfolio` into an Arabic-first editorial portfolio, and
 
 ## Tech decisions
 
-| Area | Decision | Why |
-|---|---|---|
-| Framework | Keep Next.js 15 App Router, React 19, TypeScript strict | Already in place; no migration risk |
-| Styling | Tailwind CSS 4 with design tokens in `globals.css` `@theme` | One source for colours, type, spacing |
-| Motion | Framer Motion for component motion; CSS for marquee and rings | Framer Motion handles enter/exit and `useReducedMotion` |
-| Scroll effects | Framer Motion `useScroll` / `whileInView` (no GSAP unless a need appears) | One motion library keeps the bundle small |
-| Fonts | `next/font/google`: Alexandria, IBM Plex Sans Arabic, IBM Plex Mono | Self-hosted, no layout shift; drop the 4 unused local font files |
-| i18n | next-intl messages for every string; no hard-coded copy in components | Current AR page still shows English labels |
-| Data | Supabase Postgres + Storage; server-only service-role client | Existing setup |
-| Auth | Signed session cookie (HMAC via jose) or Supabase Auth | Replaces the forgeable static cookie |
-| Validation | Zod schemas shared by forms and server actions | One contract, checked on both sides |
-| Testing | Vitest (unit), Playwright (e2e + visual), axe-core (a11y), Lighthouse CI | Automated gates for every PR |
+| Area           | Decision                                                                  | Why                                                              |
+| -------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Framework      | Keep Next.js 15 App Router, React 19, TypeScript strict                   | Already in place; no migration risk                              |
+| Styling        | Tailwind CSS 4 with design tokens in `globals.css` `@theme`               | One source for colours, type, spacing                            |
+| Motion         | Framer Motion for component motion; CSS for marquee and rings             | Framer Motion handles enter/exit and `useReducedMotion`          |
+| Scroll effects | Framer Motion `useScroll` / `whileInView` (no GSAP unless a need appears) | One motion library keeps the bundle small                        |
+| Fonts          | `next/font/google`: Alexandria, IBM Plex Sans Arabic, IBM Plex Mono       | Self-hosted, no layout shift; drop the 4 unused local font files |
+| i18n           | next-intl messages for every string; no hard-coded copy in components     | Current AR page still shows English labels                       |
+| Data           | Supabase Postgres + Storage; server-only service-role client              | Existing setup                                                   |
+| Auth           | Signed session cookie (HMAC via jose) or Supabase Auth                    | Replaces the forgeable static cookie                             |
+| Validation     | Zod schemas shared by forms and server actions                            | One contract, checked on both sides                              |
+| Testing        | Vitest (unit), Playwright (e2e + visual), axe-core (a11y), Lighthouse CI  | Automated gates for every PR                                     |
 
 ## Current-state audit
 
 The repo has one critical security bug and several correctness bugs that the rebuild must fix first. Findings come from a full read of commit `0dd39f5` (2026-06-17). Re-verified by A0 on 2026-11-20; additions are in DECISIONS.md.
 
-| # | Severity | Area | Finding | File |
-|---|---|---|---|---|
-| A1 | Critical | Auth | Session cookie is the constant `dashboard_token=authenticated`. Anyone can set it and call every server action with the service-role key. | `src/actions/auth.ts`, `src/lib/dashboard-auth.ts`, `middleware.ts` |
-| A2 | High | Auth | Password compared with `!==` (not timing-safe); no rate limit or lockout on login. | `src/actions/auth.ts` |
-| A3 | High | Uploads | Server checks only `file.type.startsWith("image/")`, which accepts `image/svg+xml` (stored XSS on a public bucket) and trusts client MIME. | `src/actions/projects.ts` |
-| A4 | Medium | Uploads | `src/lib/upload.ts` uploads from the browser with the anon key; it is unused, but only works if Storage allows anon writes. Delete it and verify bucket policies deny anon insert. | `src/lib/upload.ts` |
-| B1 | High | Caching | Mutations call `revalidatePath("/")` only; `/ar`, `/en` and `/[locale]/projects/[slug]` stay stale. | `src/actions/projects.ts` |
-| B2 | Medium | Data | `getProjects` silently falls back to mock projects on any DB error, hiding outages and showing fake data in production. | `src/lib/projects.ts` |
-| B3 | Medium | Data | Deleting a project leaves its images in Storage (orphans). | `src/actions/projects.ts` |
-| B4 | Medium | Data | `category` enum still contains `salla`; DB rows and seed script carry Salla data. | `src/types/index.ts`, `scripts/seed-projects.mjs` |
-| B5 | Low | Data | `getProjectBySlug` fetches every project to find one. | `src/lib/projects.ts` |
-| I1 | High | i18n | Most copy is hard-coded in components; next-intl messages are barely used, so `/ar` shows English labels. | `src/components/sections/*` |
-| I2 | Medium | i18n | Root `<html lang="en">` is fixed; `dir` is set on an inner div. Root redirects to `/en` although the audience is Arabic-first. | `src/app/layout.tsx`, `src/app/page.tsx` |
-| P1 | Medium | Perf | Hero PNG is 1.0 MB; two unused 1.6 MB PNGs and an unused 264 KB font ship in `public/`. | `public/` |
-| P2 | Medium | Perf | `filter: blur()` animations on every section are expensive on mobile. | `src/app/globals.css` |
-| D1 | Medium | Content | Skill percentage bars and the unverified "70+ clients" stat weaken credibility. | `AboutSection.tsx` |
-| D2 | Low | SEO | No per-locale metadata, Open Graph image, sitemap or robots.txt. | `src/app` |
-| C1 | Low | Code | Dead branch in `middleware.ts`; no tests; no CI. | repo |
+| #   | Severity | Area    | Finding                                                                                                                                                                            | File                                                                |
+| --- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| A1  | Critical | Auth    | Session cookie is the constant `dashboard_token=authenticated`. Anyone can set it and call every server action with the service-role key.                                          | `src/actions/auth.ts`, `src/lib/dashboard-auth.ts`, `middleware.ts` |
+| A2  | High     | Auth    | Password compared with `!==` (not timing-safe); no rate limit or lockout on login.                                                                                                 | `src/actions/auth.ts`                                               |
+| A3  | High     | Uploads | Server checks only `file.type.startsWith("image/")`, which accepts `image/svg+xml` (stored XSS on a public bucket) and trusts client MIME.                                         | `src/actions/projects.ts`                                           |
+| A4  | Medium   | Uploads | `src/lib/upload.ts` uploads from the browser with the anon key; it is unused, but only works if Storage allows anon writes. Delete it and verify bucket policies deny anon insert. | `src/lib/upload.ts`                                                 |
+| B1  | High     | Caching | Mutations call `revalidatePath("/")` only; `/ar`, `/en` and `/[locale]/projects/[slug]` stay stale.                                                                                | `src/actions/projects.ts`                                           |
+| B2  | Medium   | Data    | `getProjects` silently falls back to mock projects on any DB error, hiding outages and showing fake data in production.                                                            | `src/lib/projects.ts`                                               |
+| B3  | Medium   | Data    | Deleting a project leaves its images in Storage (orphans).                                                                                                                         | `src/actions/projects.ts`                                           |
+| B4  | Medium   | Data    | `category` enum still contains `salla`; DB rows and seed script carry Salla data.                                                                                                  | `src/types/index.ts`, `scripts/seed-projects.mjs`                   |
+| B5  | Low      | Data    | `getProjectBySlug` fetches every project to find one.                                                                                                                              | `src/lib/projects.ts`                                               |
+| I1  | High     | i18n    | Most copy is hard-coded in components; next-intl messages are barely used, so `/ar` shows English labels.                                                                          | `src/components/sections/*`                                         |
+| I2  | Medium   | i18n    | Root `<html lang="en">` is fixed; `dir` is set on an inner div. Root redirects to `/en` although the audience is Arabic-first.                                                     | `src/app/layout.tsx`, `src/app/page.tsx`                            |
+| P1  | Medium   | Perf    | Hero PNG is 1.0 MB; two unused 1.6 MB PNGs and an unused 264 KB font ship in `public/`.                                                                                            | `public/`                                                           |
+| P2  | Medium   | Perf    | `filter: blur()` animations on every section are expensive on mobile.                                                                                                              | `src/app/globals.css`                                               |
+| D1  | Medium   | Content | Skill percentage bars and the unverified "70+ clients" stat weaken credibility.                                                                                                    | `AboutSection.tsx`                                                  |
+| D2  | Low      | SEO     | No per-locale metadata, Open Graph image, sitemap or robots.txt.                                                                                                                   | `src/app`                                                           |
+| C1  | Low      | Code    | Dead branch in `middleware.ts`; no tests; no CI.                                                                                                                                   | repo                                                                |
 
 ## Agent roster
 
 An orchestrator and seven specialists, each with one area of ownership; no agent reviews its own work. File ownership prevents two agents editing the same file in parallel.
 
-| Agent | Role | Owns (writes) | Hands off | Must not |
-|---|---|---|---|---|
-| A0 Orchestrator | Splits work into tickets, assigns agents, resolves conflicts, merges | `docs/PLAN.md`, `docs/TASKS.md`, `docs/DECISIONS.md` | Ticket with scope, files, acceptance criteria | Write feature code |
-| A1 Security & Data | Auth, sessions, server actions, Supabase schema, migrations, RLS, Storage policies | `src/actions/*`, `src/lib/auth/*`, `src/lib/supabase/*`, `supabase/migrations/*`, `middleware.ts` | Typed data API (`src/lib/data/*`) + Zod schemas | Touch UI components |
-| A2 Design System | Tokens, fonts, primitives (Button, Tag, SectionHeader, Reveal), motion presets | `src/app/globals.css`, `src/components/ui/*`, `src/lib/motion.ts` | Documented primitives with usage examples | Build page sections |
-| A3 Public Site | Hero, spec strip, featured carousel, archive, skills, education, contact, case-study page | `src/components/sections/*`, `src/components/projects/*`, `src/app/[locale]/*` | Sections wired to A1's data API and A4's messages | Hard-code copy or colours |
-| A4 Content & i18n | All AR/EN copy from the CV, metadata, Open Graph, sitemap, robots | `src/messages/*.json`, `src/app/sitemap.ts`, `src/app/robots.ts`, metadata files | Complete, reviewed message files | Change layout or logic |
-| A5 Dashboard | Login UI, projects CRUD, ordering, featured toggle, uploads UX, settings, CV upload | `src/app/dashboard/*`, `src/components/dashboard/*` | Working dashboard on A1's API | Bypass A1's server actions |
-| A6 QA | Unit, e2e, visual, a11y and performance tests; CI workflow | `tests/*`, `e2e/*`, `.github/workflows/*`, `playwright.config.ts` | Test report per PR | Fix product code (files a bug instead) |
-| A7 Reviewer | Independent review of every PR against the checklists in QA gates | Review comments only | Approve or request changes | Review a PR it contributed to |
+| Agent              | Role                                                                                      | Owns (writes)                                                                                     | Hands off                                         | Must not                               |
+| ------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------- |
+| A0 Orchestrator    | Splits work into tickets, assigns agents, resolves conflicts, merges                      | `docs/PLAN.md`, `docs/TASKS.md`, `docs/DECISIONS.md`                                              | Ticket with scope, files, acceptance criteria     | Write feature code                     |
+| A1 Security & Data | Auth, sessions, server actions, Supabase schema, migrations, RLS, Storage policies        | `src/actions/*`, `src/lib/auth/*`, `src/lib/supabase/*`, `supabase/migrations/*`, `middleware.ts` | Typed data API (`src/lib/data/*`) + Zod schemas   | Touch UI components                    |
+| A2 Design System   | Tokens, fonts, primitives (Button, Tag, SectionHeader, Reveal), motion presets            | `src/app/globals.css`, `src/components/ui/*`, `src/lib/motion.ts`                                 | Documented primitives with usage examples         | Build page sections                    |
+| A3 Public Site     | Hero, spec strip, featured carousel, archive, skills, education, contact, case-study page | `src/components/sections/*`, `src/components/projects/*`, `src/app/[locale]/*`                    | Sections wired to A1's data API and A4's messages | Hard-code copy or colours              |
+| A4 Content & i18n  | All AR/EN copy from the CV, metadata, Open Graph, sitemap, robots                         | `src/messages/*.json`, `src/app/sitemap.ts`, `src/app/robots.ts`, metadata files                  | Complete, reviewed message files                  | Change layout or logic                 |
+| A5 Dashboard       | Login UI, projects CRUD, ordering, featured toggle, uploads UX, settings, CV upload       | `src/app/dashboard/*`, `src/components/dashboard/*`                                               | Working dashboard on A1's API                     | Bypass A1's server actions             |
+| A6 QA              | Unit, e2e, visual, a11y and performance tests; CI workflow                                | `tests/*`, `e2e/*`, `.github/workflows/*`, `playwright.config.ts`                                 | Test report per PR                                | Fix product code (files a bug instead) |
+| A7 Reviewer        | Independent review of every PR against the checklists in QA gates                         | Review comments only                                                                              | Approve or request changes                        | Review a PR it contributed to          |
 
 Every agent starts by reading `docs/PLAN.md`, `docs/DECISIONS.md` and its ticket, and ends by running `npm run lint && npm run typecheck && npm run test` locally.
 
@@ -91,25 +91,25 @@ Phases 1–3 start together once tooling is in; the public site and dashboard st
 
 Tickets run in phase order; tickets in the same phase run in parallel when their files do not overlap. Each ticket is one PR.
 
-| ID | Ticket | Agent | Depends on | Acceptance criteria |
-|---|---|---|---|---|
-| P0-1 | Tooling: TS strict, typecheck script, Prettier, Husky pre-commit, GitHub Actions (lint, typecheck, test, build) | A6 | — | CI green on an empty PR; a type error fails CI |
-| P0-2 | Baseline: Playwright screenshots of the current site at 360/768/1280/1920 px; Lighthouse scores recorded | A6 | P0-1 | Baseline stored in `e2e/baseline/` |
-| P0-3 | Clean-up: delete unused images, fonts, `upload.ts`, dead middleware branch, Salla seed data | A1 | P0-1 | `public/` under 300 KB; no `salla` string in repo |
-| P2-1 | Tokens + fonts: colours, type scale, spacing, radii, easing in `@theme`; next/font for the 3 families | A2 | P0-1 | No hex colour or font name outside `globals.css`; CLS 0 |
-| P2-2 | Primitives + motion presets: Button, Tag, SectionHeader, Reveal, LineReveal, Marquee; one `motion.ts` with durations and easings | A2 | P2-1 | Every motion respects `useReducedMotion`; Storybook-style demo page at `/dev/ui` (dev only) |
-| P3-1 | AR/EN message files from the CV; ESLint rule blocking JSX string literals | A4 | P0-1 | `/ar` and `/en` show zero untranslated strings |
-| P3-2 | Locale plumbing: `<html lang dir>` from locale, `/` redirects to `/ar`, language switch keeps the current path | A4 | P3-1 | `curl /ar` shows `lang="ar" dir="rtl"` on `<html>` |
-| P3-3 | SEO: per-locale metadata, OG image (1200×630), `sitemap.ts`, `robots.ts`, hreflang | A4 | P3-2 | Rich-results and OG debuggers pass |
-| P4-1 | Header: sticky, mobile menu sheet with focus trap and Esc to close, CV download | A3 | P2-2, P3-1 | Keyboard-only navigation works; no layout shift on scroll |
-| P4-2 | Hero: line reveal, rotating role words, portrait clipped inside the circle, rotating text ring, two CTAs | A3 | P2-2 | LCP < 2.0 s on mobile; portrait never exceeds its circle at any width; rotating words have a static accessible name |
-| P4-3 | Spec strip: 4 cells (specialty, role, core stack, status + Gaza clock) | A3 | P2-2 | One column below 560 px; clock hydrates without mismatch warnings |
-| P4-4 | Featured carousel: `featured = true` ordered by `featured_order`; autoplay 6.5 s with progress bar; pause on hover, focus and hidden tab; arrow keys and swipe | A3 | A1 data API | Tabs follow the WAI-ARIA tabs pattern; reduced motion disables autoplay |
-| P4-5 | Archive: all projects with a `github_url`, hover fill, link to case study | A3 | A1 data API | Projects without a GitHub URL never render |
-| P4-6 | Skills: tabs + tiles from the skills table; each tile lists the projects that use it | A3 | A1 data API | Tile count per tab matches the database |
-| P4-7 | Education, contact, footer | A3 | P3-1 | Contrast 4.5:1 or more on the dark block |
-| P4-8 | Case-study page `/[locale]/projects/[slug]`: `generateStaticParams`, gallery, stack, links, `notFound()` | A3 | A1 data API | Unknown slug returns 404, not a crash |
-| P4-9 | `not-found.tsx`, `error.tsx`, `loading.tsx` per route group | A3 | P2-2 | Forced DB error shows the error page, never mock data |
+| ID   | Ticket                                                                                                                                                         | Agent | Depends on  | Acceptance criteria                                                                                                 |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| P0-1 | Tooling: TS strict, typecheck script, Prettier, Husky pre-commit, GitHub Actions (lint, typecheck, test, build)                                                | A6    | —           | CI green on an empty PR; a type error fails CI                                                                      |
+| P0-2 | Baseline: Playwright screenshots of the current site at 360/768/1280/1920 px; Lighthouse scores recorded                                                       | A6    | P0-1        | Baseline stored in `e2e/baseline/`                                                                                  |
+| P0-3 | Clean-up: delete unused images, fonts, `upload.ts`, dead middleware branch, Salla seed data                                                                    | A1    | P0-1        | `public/` under 300 KB; no `salla` string in repo                                                                   |
+| P2-1 | Tokens + fonts: colours, type scale, spacing, radii, easing in `@theme`; next/font for the 3 families                                                          | A2    | P0-1        | No hex colour or font name outside `globals.css`; CLS 0                                                             |
+| P2-2 | Primitives + motion presets: Button, Tag, SectionHeader, Reveal, LineReveal, Marquee; one `motion.ts` with durations and easings                               | A2    | P2-1        | Every motion respects `useReducedMotion`; Storybook-style demo page at `/dev/ui` (dev only)                         |
+| P3-1 | AR/EN message files from the CV; ESLint rule blocking JSX string literals                                                                                      | A4    | P0-1        | `/ar` and `/en` show zero untranslated strings                                                                      |
+| P3-2 | Locale plumbing: `<html lang dir>` from locale, `/` redirects to `/ar`, language switch keeps the current path                                                 | A4    | P3-1        | `curl /ar` shows `lang="ar" dir="rtl"` on `<html>`                                                                  |
+| P3-3 | SEO: per-locale metadata, OG image (1200×630), `sitemap.ts`, `robots.ts`, hreflang                                                                             | A4    | P3-2        | Rich-results and OG debuggers pass                                                                                  |
+| P4-1 | Header: sticky, mobile menu sheet with focus trap and Esc to close, CV download                                                                                | A3    | P2-2, P3-1  | Keyboard-only navigation works; no layout shift on scroll                                                           |
+| P4-2 | Hero: line reveal, rotating role words, portrait clipped inside the circle, rotating text ring, two CTAs                                                       | A3    | P2-2        | LCP < 2.0 s on mobile; portrait never exceeds its circle at any width; rotating words have a static accessible name |
+| P4-3 | Spec strip: 4 cells (specialty, role, core stack, status + Gaza clock)                                                                                         | A3    | P2-2        | One column below 560 px; clock hydrates without mismatch warnings                                                   |
+| P4-4 | Featured carousel: `featured = true` ordered by `featured_order`; autoplay 6.5 s with progress bar; pause on hover, focus and hidden tab; arrow keys and swipe | A3    | A1 data API | Tabs follow the WAI-ARIA tabs pattern; reduced motion disables autoplay                                             |
+| P4-5 | Archive: all projects with a `github_url`, hover fill, link to case study                                                                                      | A3    | A1 data API | Projects without a GitHub URL never render                                                                          |
+| P4-6 | Skills: tabs + tiles from the skills table; each tile lists the projects that use it                                                                           | A3    | A1 data API | Tile count per tab matches the database                                                                             |
+| P4-7 | Education, contact, footer                                                                                                                                     | A3    | P3-1        | Contrast 4.5:1 or more on the dark block                                                                            |
+| P4-8 | Case-study page `/[locale]/projects/[slug]`: `generateStaticParams`, gallery, stack, links, `notFound()`                                                       | A3    | A1 data API | Unknown slug returns 404, not a crash                                                                               |
+| P4-9 | `not-found.tsx`, `error.tsx`, `loading.tsx` per route group                                                                                                    | A3    | P2-2        | Forced DB error shows the error page, never mock data                                                               |
 
 ## Dashboard and data tasks
 
@@ -158,41 +158,41 @@ create policy "public read project_skills" on project_skills for select to anon 
 
 > Note: this draft has known gaps (pos/other rows, published visibility, no 0001 baseline). See DECISIONS.md D-002 to D-004 before applying.
 
-| ID | Ticket | Agent | Depends on | Acceptance criteria |
-|---|---|---|---|---|
-| D1-1 | Signed-session auth, `requireAdmin()` in every action, login rate limit | A1 | P0-1 | A forged cookie gets 401/redirect; e2e test proves it |
-| D1-2 | Migration `0002_rebuild.sql` + typed data API (`getProjects`, `getFeatured`, `getSkills`, `getProjectBySlug` with `.eq('slug')`) | A1 | D1-1 | Generated Supabase types; no `any`; DB errors throw instead of returning mock data |
-| D1-3 | Upload hardening: allow only PNG/JPEG/WebP/AVIF by magic bytes (file-type), max 5 MB, re-encode to WebP with sharp, random file names | A1 | D1-1 | An SVG or a renamed .exe is rejected server-side |
-| D1-4 | Revalidation: `revalidateTag('projects')` / `revalidateTag('skills')` on every mutation; data fetches tagged | A1 | D1-2 | Edit in dashboard → `/ar`, `/en` and the case-study page update within one request |
-| D1-5 | Delete cleanup: remove a project's Storage folder when the row is deleted | A1 | D1-3 | No orphan files after delete (checked by test) |
-| D5-1 | Projects table: search, published toggle, featured toggle, drag-to-reorder for `order_num` and `featured_order` | A5 | D1-2 | Reorder persists after reload; optimistic UI rolls back on error |
-| D5-2 | Project form: AR/EN tabs, label, highlights, skills multi-select, GitHub URL required, slug auto-generated and editable | A5 | D1-2 | Zod errors show next to each field in both languages; unsaved-changes warning |
-| D5-3 | Image manager: drag-and-drop, preview, reorder, set cover, delete; progress per file | A5 | D1-3 | Upload of 6 images at 5 MB each succeeds on a slow 3G profile |
-| D5-4 | Skills manager: CRUD + category + order | A5 | D1-2 | Changes appear in the public Skills tabs |
-| D5-5 | Settings: contact links (validated URLs/phone), CV upload (PDF only, 5 MB) served at `/cv.pdf` | A5 | D1-3 | Header CV button downloads the current file |
-| D5-6 | Dashboard polish: empty states, toasts, confirm dialogs, keyboard shortcuts, RTL-correct layout | A5 | D5-1 | axe-core shows zero serious issues on every dashboard page |
+| ID   | Ticket                                                                                                                                | Agent | Depends on | Acceptance criteria                                                                |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------- | ---------------------------------------------------------------------------------- |
+| D1-1 | Signed-session auth, `requireAdmin()` in every action, login rate limit                                                               | A1    | P0-1       | A forged cookie gets 401/redirect; e2e test proves it                              |
+| D1-2 | Migration `0002_rebuild.sql` + typed data API (`getProjects`, `getFeatured`, `getSkills`, `getProjectBySlug` with `.eq('slug')`)      | A1    | D1-1       | Generated Supabase types; no `any`; DB errors throw instead of returning mock data |
+| D1-3 | Upload hardening: allow only PNG/JPEG/WebP/AVIF by magic bytes (file-type), max 5 MB, re-encode to WebP with sharp, random file names | A1    | D1-1       | An SVG or a renamed .exe is rejected server-side                                   |
+| D1-4 | Revalidation: `revalidateTag('projects')` / `revalidateTag('skills')` on every mutation; data fetches tagged                          | A1    | D1-2       | Edit in dashboard → `/ar`, `/en` and the case-study page update within one request |
+| D1-5 | Delete cleanup: remove a project's Storage folder when the row is deleted                                                             | A1    | D1-3       | No orphan files after delete (checked by test)                                     |
+| D5-1 | Projects table: search, published toggle, featured toggle, drag-to-reorder for `order_num` and `featured_order`                       | A5    | D1-2       | Reorder persists after reload; optimistic UI rolls back on error                   |
+| D5-2 | Project form: AR/EN tabs, label, highlights, skills multi-select, GitHub URL required, slug auto-generated and editable               | A5    | D1-2       | Zod errors show next to each field in both languages; unsaved-changes warning      |
+| D5-3 | Image manager: drag-and-drop, preview, reorder, set cover, delete; progress per file                                                  | A5    | D1-3       | Upload of 6 images at 5 MB each succeeds on a slow 3G profile                      |
+| D5-4 | Skills manager: CRUD + category + order                                                                                               | A5    | D1-2       | Changes appear in the public Skills tabs                                           |
+| D5-5 | Settings: contact links (validated URLs/phone), CV upload (PDF only, 5 MB) served at `/cv.pdf`                                        | A5    | D1-3       | Header CV button downloads the current file                                        |
+| D5-6 | Dashboard polish: empty states, toasts, confirm dialogs, keyboard shortcuts, RTL-correct layout                                       | A5    | D5-1       | axe-core shows zero serious issues on every dashboard page                         |
 
 ## Bug forecast and risk register
 
 These are the bugs most likely to appear in this stack, each paired with the test that catches it before merge. A7 checks every PR against this list.
 
-| # | Likely bug | Where | Prevention | Catching test |
-|---|---|---|---|---|
-| R1 | Hydration mismatch from the live Gaza clock or `Date.now()` in render | Spec strip, education | Render the clock only after mount (`useEffect`), server renders `--:--` | Playwright: zero console errors on load |
-| R2 | RTL breakage: arrows point the wrong way, left/right instead of logical properties, carousel swipe reversed | All sections | Use start/end, `ps-`/`pe-`, `ms-`/`me-`; mirror icons with `rtl:-scale-x-100` | Visual snapshots of `/ar` and `/en` |
-| R3 | Arabic glyphs clipped or lines overlapping from tight line-height or negative letter-spacing | Headlines | line-height 1.2+ for Arabic display; `letter-spacing: 0` on Arabic | Visual snapshot at 360 px |
-| R4 | Horizontal scroll on mobile from the marquee, rotated elements or `100vw` widths | Hero, marquee, footer | `overflow-x: clip` on the root; avoid `100vw` | e2e: `scrollWidth === clientWidth` at 360 px |
-| R5 | Carousel timer leaks or double-fires after navigation; keeps running in a hidden tab | Featured | Clear the interval in cleanup; pause on `visibilitychange` | Unit test with fake timers |
-| R6 | Framer Motion runs on the server or blocks LCP | Hero | Motion in client leaves only; the LCP portrait is not opacity-0 at first paint | Lighthouse LCP budget |
-| R7 | Stale public pages after a dashboard edit | Caching | Tag-based revalidation (D1-4) | e2e: edit title, reload `/ar`, see new title |
-| R8 | Server action callable without a session | Every action | `requireAdmin()` as the first line; a test that lists all exported actions | e2e: call each action with a forged cookie, expect 401 |
-| R9 | Slug collision or slug change breaks links | Projects | Unique index; lock the slug after publish or keep a redirect | Unit test on duplicate slug |
-| R10 | Large uploads exceed the server-action body limit (8 MB) and fail silently | Image manager | Client-side size check + one file per request + visible error | e2e with a 9 MB file |
-| R11 | `next/image` refuses a new Supabase host | Images | Keep `remotePatterns` in sync with the project URL | Build-time check |
-| R12 | Env vars missing in Vercel preview, so the site renders empty | Deploy | Validate env with Zod at boot (`src/lib/env.ts`); fail the build | CI build with an empty `.env` fails loudly |
-| R13 | Reduced-motion users still get autoplay and parallax | All motion | Shared `useReducedMotion` gate in `motion.ts` | Playwright with `reducedMotion: 'reduce'` |
-| R14 | Focus lost or trapped after closing the mobile menu or a dashboard dialog | Header, dashboard | Return focus to the trigger; use a tested dialog primitive | axe + keyboard e2e |
-| R15 | Mixed-direction text (English stack names inside Arabic) renders out of order | Tags, meta lines | Wrap Latin runs in `<bdi>` or `dir="ltr"` spans | Visual snapshot |
+| #   | Likely bug                                                                                                  | Where                 | Prevention                                                                     | Catching test                                          |
+| --- | ----------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| R1  | Hydration mismatch from the live Gaza clock or `Date.now()` in render                                       | Spec strip, education | Render the clock only after mount (`useEffect`), server renders `--:--`        | Playwright: zero console errors on load                |
+| R2  | RTL breakage: arrows point the wrong way, left/right instead of logical properties, carousel swipe reversed | All sections          | Use start/end, `ps-`/`pe-`, `ms-`/`me-`; mirror icons with `rtl:-scale-x-100`  | Visual snapshots of `/ar` and `/en`                    |
+| R3  | Arabic glyphs clipped or lines overlapping from tight line-height or negative letter-spacing                | Headlines             | line-height 1.2+ for Arabic display; `letter-spacing: 0` on Arabic             | Visual snapshot at 360 px                              |
+| R4  | Horizontal scroll on mobile from the marquee, rotated elements or `100vw` widths                            | Hero, marquee, footer | `overflow-x: clip` on the root; avoid `100vw`                                  | e2e: `scrollWidth === clientWidth` at 360 px           |
+| R5  | Carousel timer leaks or double-fires after navigation; keeps running in a hidden tab                        | Featured              | Clear the interval in cleanup; pause on `visibilitychange`                     | Unit test with fake timers                             |
+| R6  | Framer Motion runs on the server or blocks LCP                                                              | Hero                  | Motion in client leaves only; the LCP portrait is not opacity-0 at first paint | Lighthouse LCP budget                                  |
+| R7  | Stale public pages after a dashboard edit                                                                   | Caching               | Tag-based revalidation (D1-4)                                                  | e2e: edit title, reload `/ar`, see new title           |
+| R8  | Server action callable without a session                                                                    | Every action          | `requireAdmin()` as the first line; a test that lists all exported actions     | e2e: call each action with a forged cookie, expect 401 |
+| R9  | Slug collision or slug change breaks links                                                                  | Projects              | Unique index; lock the slug after publish or keep a redirect                   | Unit test on duplicate slug                            |
+| R10 | Large uploads exceed the server-action body limit (8 MB) and fail silently                                  | Image manager         | Client-side size check + one file per request + visible error                  | e2e with a 9 MB file                                   |
+| R11 | `next/image` refuses a new Supabase host                                                                    | Images                | Keep `remotePatterns` in sync with the project URL                             | Build-time check                                       |
+| R12 | Env vars missing in Vercel preview, so the site renders empty                                               | Deploy                | Validate env with Zod at boot (`src/lib/env.ts`); fail the build               | CI build with an empty `.env` fails loudly             |
+| R13 | Reduced-motion users still get autoplay and parallax                                                        | All motion            | Shared `useReducedMotion` gate in `motion.ts`                                  | Playwright with `reducedMotion: 'reduce'`              |
+| R14 | Focus lost or trapped after closing the mobile menu or a dashboard dialog                                   | Header, dashboard     | Return focus to the trigger; use a tested dialog primitive                     | axe + keyboard e2e                                     |
+| R15 | Mixed-direction text (English stack names inside Arabic) renders out of order                               | Tags, meta lines      | Wrap Latin runs in `<bdi>` or `dir="ltr"` spans                                | Visual snapshot                                        |
 
 R16–R21 were added by A0 on 2026-11-20; see DECISIONS.md D-009. The Motion and Scroll-effects rows in Tech decisions are superseded by D-013 (CSS first).
 

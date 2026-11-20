@@ -51,25 +51,25 @@ Next.js loads `.env*` files with variable expansion, so a value like `$2b$12$abc
 
 ## D-009 Risks added to the register — Accepted
 
-| # | Likely bug | Where | Prevention | Catching test |
-|---|---|---|---|---|
-| R16 | bcrypt hash truncated by `$` expansion; login always fails | Env, D1-1 | D-007 (base64) | Unit test on env parsing with a real hash |
-| R17 | Unpublished or GitHub-less project readable via the anon REST API | RLS, D1-2 | D-004 policy | Integration test: anon `select` on an unpublished row returns nothing |
-| R18 | `cookies()` called inside a cached data function, so the build fails or caching is silently off | Data API, D1-4 | D-008 | Build in CI + e2e for R7 |
-| R19 | Framer Motion's full bundle blows the 180 KB JS budget | Public site | CSS-first motion (D-013); if Framer Motion is used, `LazyMotion` + `domAnimation` + `m.*` only | Lighthouse CI JS budget |
-| R20 | `-webkit-text-stroke` outline text shows seams where Arabic glyphs join, or vanishes in forced-colours mode | Hero h1, section h2s, footer wordmark | Check Alexandria at 800/900; `forced-colors` fallback to solid text | Visual snapshot at 360 and 1280 px, AR and EN |
-| R21 | Logo, ring text or physical-direction keyframes copied from the RTL-only mockup animate from the wrong side in `/en` | All sections | SPEC.md §3 and V-2 | Visual snapshots of `/en` mid-animation (animations paused at a fixed frame) |
+| #   | Likely bug                                                                                                           | Where                                 | Prevention                                                                                     | Catching test                                                                |
+| --- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| R16 | bcrypt hash truncated by `$` expansion; login always fails                                                           | Env, D1-1                             | D-007 (base64)                                                                                 | Unit test on env parsing with a real hash                                    |
+| R17 | Unpublished or GitHub-less project readable via the anon REST API                                                    | RLS, D1-2                             | D-004 policy                                                                                   | Integration test: anon `select` on an unpublished row returns nothing        |
+| R18 | `cookies()` called inside a cached data function, so the build fails or caching is silently off                      | Data API, D1-4                        | D-008                                                                                          | Build in CI + e2e for R7                                                     |
+| R19 | Framer Motion's full bundle blows the 180 KB JS budget                                                               | Public site                           | CSS-first motion (D-013); if Framer Motion is used, `LazyMotion` + `domAnimation` + `m.*` only | Lighthouse CI JS budget                                                      |
+| R20 | `-webkit-text-stroke` outline text shows seams where Arabic glyphs join, or vanishes in forced-colours mode          | Hero h1, section h2s, footer wordmark | Check Alexandria at 800/900; `forced-colors` fallback to solid text                            | Visual snapshot at 360 and 1280 px, AR and EN                                |
+| R21 | Logo, ring text or physical-direction keyframes copied from the RTL-only mockup animate from the wrong side in `/en` | All sections                          | SPEC.md §3 and V-2                                                                             | Visual snapshots of `/en` mid-animation (animations paused at a fixed frame) |
 
 ## D-010 Ownership gaps — Accepted
 
 Files no agent owned in the roster are assigned here. Only the named owner edits them; anyone else files a request with A0.
 
-| File(s) | Owner | Reason |
-|---|---|---|
-| `src/app/layout.tsx`, `src/app/page.tsx`, `src/i18n/*` | A4 | Locale plumbing (P3-2) |
-| Route-group root layouts `src/app/(site)/`, `src/app/(dashboard)/` | A4 creates, A3 / A5 fill | `<html lang dir>` must come from the locale while the dashboard stays outside `[locale]`; this needs two root layouts via route groups |
-| `next.config.ts`, `src/types/*`, `src/lib/env.ts`, `src/lib/projects.ts`, `src/lib/site-settings.ts`, `src/data/*`, `scripts/*`, `.env.example`, `README.md` | A1 | Data, env and config |
-| `package.json`, `package-lock.json` | Ticket owner, serialised by A0 | Merge one dependency change at a time to avoid lockfile conflicts |
+| File(s)                                                                                                                                                      | Owner                          | Reason                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/layout.tsx`, `src/app/page.tsx`, `src/i18n/*`                                                                                                       | A4                             | Locale plumbing (P3-2)                                                                                                                 |
+| Route-group root layouts `src/app/(site)/`, `src/app/(dashboard)/`                                                                                           | A4 creates, A3 / A5 fill       | `<html lang dir>` must come from the locale while the dashboard stays outside `[locale]`; this needs two root layouts via route groups |
+| `next.config.ts`, `src/types/*`, `src/lib/env.ts`, `src/lib/projects.ts`, `src/lib/site-settings.ts`, `src/data/*`, `scripts/*`, `.env.example`, `README.md` | A1                             | Data, env and config                                                                                                                   |
+| `package.json`, `package-lock.json`                                                                                                                          | Ticket owner, serialised by A0 | Merge one dependency change at a time to avoid lockfile conflicts                                                                      |
 
 ## D-011 Open questions for the owner
 
@@ -107,10 +107,13 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 ## D-017 Tooling conventions from P0-1 — Accepted (2026-11-20)
 
 - **One-time reformat:** P0-1 ran Prettier over the whole repo (30 files, formatting only) before any parallel work starts, so later PRs carry no formatting noise. Style keeps the existing code's choices: double quotes, semicolons, no trailing commas, 100-column lines.
-- **Line endings:** `.gitattributes` forces LF in the working copy; without it, Windows checkouts get CRLF and `prettier --check` fails locally.
-- **Lint:** `npm run lint` fails on any warning. `no-console` (except `warn`/`error`) applies to `src/**` and `middleware.ts`; CLI scripts under `scripts/` may print.
-- **Node:** 22 (`.nvmrc`, `engines >=22.12`), used by CI and Vercel.
-- **Vitest:** `vitest.config.mts` (ESM, so Vite loads it without warnings); tests live in `tests/**` (A6) and may sit next to code as `src/**/*.test.ts`.
+- **Merge method exception:** PR #1 merges with a **merge commit**, not squash or rebase, so the reformat commit keeps the hash listed in `.git-blame-ignore-revs`. Every other PR squash-merges as planned.
+- **Line endings:** `.gitattributes` forces LF in the working copy; without it, Windows checkouts get CRLF and `prettier --check` fails locally. It does not rewrite files already checked out: an existing Windows clone with `core.autocrlf=true` needs one re-checkout on a clean tree, `git rm --cached -r . && git reset --hard`.
+- **Lint:** `npm run lint` fails on any warning. `no-console` (except `warn`/`error`) applies to `src/**` and `middleware.ts`; CLI scripts under `scripts/` may print. ESLint and `tsc` skip `.claude/**` (agent worktrees). lint-staged passes `--no-warn-ignored`, so staging an ignored file never blocks a commit.
+- **Node:** 22 (`.nvmrc`, `engines: "22.x"`), so Vercel picks the same major as CI.
+- **Build warnings:** CI fails if `next build` prints a `⚠` line (QA gate 1); Next itself exits 0 on warnings.
+- **Vitest:** `vitest.config.mts` (ESM, so Vite loads it without warnings); tests live in `tests/**` (A6) and may sit next to code; both `.test.ts` and `.test.tsx` run.
+- **Prettier scope:** everything except `docs/design/**` (the mockup export), so the planning docs are format-checked too.
 - **CI build without secrets:** the CI build runs with no Supabase env and currently passes on the mock fallback. When D1-2 removes the fallback and R12 makes missing env fail the build, CI needs either repository secrets or explicit dummy values; A1 and A6 settle this in D1-2.
 - **Pre-commit:** Husky runs `lint-staged` (ESLint `--fix` + Prettier on staged files). Typecheck and tests run in CI, not in the hook, to keep commits fast.
 

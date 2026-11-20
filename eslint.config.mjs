@@ -12,6 +12,7 @@ const compat = new FlatCompat({
 const eslintConfig = [
   {
     ignores: [
+      ".claude/**",
       ".next/**",
       "out/**",
       "dist/**",

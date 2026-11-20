@@ -40,7 +40,15 @@ jobs:
       - name: Test
         run: npm test
 
+      # QA gate 1: `next build` with zero warnings. Next exits 0 on warnings, so grep for its ⚠ marker.
       - name: Build
-        run: npm run build
+        shell: bash
+        run: |
+          npm run build 2>&1 | tee build.log
+          if grep -q "⚠" build.log; then
+            echo "::error::next build printed warnings (QA gate 1 requires zero):"
+            grep "⚠" build.log
+            exit 1
+          fi
         env:
           NEXT_TELEMETRY_DISABLED: 1

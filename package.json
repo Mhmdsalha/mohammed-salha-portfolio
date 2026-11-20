@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.12"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
@@ -19,7 +19,7 @@
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx}": [
-      "eslint --max-warnings=0 --fix",
+      "eslint --max-warnings=0 --no-warn-ignored --fix",
       "prettier --write"
     ],
     "*.{json,css,md,yml,yaml}": "prettier --write"
