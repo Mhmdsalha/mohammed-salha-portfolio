@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
+import { fontVariables } from "./fonts";
 import "./globals.css";
 
 const jetbrains = JetBrains_Mono({
@@ -20,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
       <body className={jetbrains.variable}>{children}</body>
     </html>
   );

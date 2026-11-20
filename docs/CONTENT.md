@@ -39,16 +39,31 @@ Stack: Next.js, TypeScript, Neon PostgreSQL, NextAuth.js v5, Cloudflare R2, Upst
 
 Scope rule: a project is published only if it has a GitHub URL and no Salla content (D-004, non-goals).
 
-| Project                                          | In CV | In mockup               | In seed / DB today                                         | GitHub URL known                     | Publishable now           |
-| ------------------------------------------------ | ----- | ----------------------- | ---------------------------------------------------------- | ------------------------------------ | ------------------------- |
-| Arzaq                                            | Yes   | Featured 01, archive 01 | `arzaq-marketplace`, live `arzaq-ps.vercel.app`            | **No** (CV links one; seed has none) | Needs URL                 |
-| Saree3 POS                                       | Yes   | Featured 02, archive 02 | `saree3-pos` (category `pos`), live `saree3pos.vercel.app` | **No** (CV links one; seed has none) | Needs URL                 |
-| Graduation project (project-management platform) | No    | Featured 03, archive 03 | No                                                         | No                                   | Needs URL + details       |
-| Al-Amanah car showroom                           | No    | Featured 04, archive 04 | No                                                         | No                                   | Needs URL + details       |
-| Al-Nakhba real estate                            | No    | Archive 05              | `al-nakhba-real-estate`                                    | Yes                                  | Yes                       |
-| Lamsa beauty store                               | No    | Archive 06              | `lamsa-beauty-store`, category **`salla`**                 | No                                   | **No**: Salla and no repo |
-| Oud abaya store                                  | No    | No                      | category `salla`                                           | No                                   | Remove (P0-3)             |
-| Lolo kids store                                  | No    | No                      | category `salla`                                           | No                                   | Remove (P0-3)             |
+| Project                                          | In CV | In mockup               | In seed / DB today                                         | GitHub URL known                                                                          | Publishable now                                                                              |
+| ------------------------------------------------ | ----- | ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Arzaq                                            | Yes   | Featured 01, archive 01 | `arzaq-marketplace`, live `arzaq-ps.vercel.app`            | Yes: `github.com/Mhmdsalha/arzaq` (repo homepage `arzaq-nine.vercel.app`)                 | Yes                                                                                          |
+| Saree3 POS                                       | Yes   | Featured 02, archive 02 | `saree3-pos` (category `pos`), live `saree3pos.vercel.app` | Yes: `github.com/Mhmdsalha/saree3-pos-project`                                            | Yes                                                                                          |
+| Graduation project (project-management platform) | No    | Featured 03, archive 03 | No                                                         | Yes: `github.com/Mhmdsalha/graduation-project-platform` (8 screenshots in `screenshots/`) | Yes, needs a DB row (D1-2)                                                                   |
+| Al-Amanah car showroom                           | No    | Featured 04, archive 04 | No                                                         | Yes: `github.com/Mhmdsalha/al-amanah-cars` (live `al-amanah-cars.vercel.app`)             | Yes, needs a DB row (D1-2)                                                                   |
+| Al-Nakhba real estate                            | No    | Archive 05              | `al-nakhba-real-estate`                                    | Yes                                                                                       | Yes                                                                                          |
+| Lamsa beauty store                               | No    | Archive 06              | `lamsa-beauty-store`, category **`salla`**                 | No                                                                                        | **No**: Salla and no repo                                                                    |
+| Oud abaya store                                  | No    | No                      | category `salla` (removed from seed in P0-3)               | Yes: `github.com/Mhmdsalha/oud-store-design` (live `oud-store-design.vercel.app`)         | Yes, as category `store` (D1-2): the repo is a standalone Next.js storefront, not Salla code |
+| Lolo kids store                                  | No    | No                      | category `salla`                                           | No                                                                                        | Remove (P0-3)                                                                                |
+
+### GitHub repositories (received 2026-11-20, all public)
+
+| Project               | Repository                                                 | What the repo says                                                                                                 |
+| --------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Arzaq                 | `https://github.com/Mhmdsalha/arzaq`                       | Next.js 16 App Router, TypeScript, Prisma, React Hook Form + Zod; homepage `arzaq-nine.vercel.app`                 |
+| Saree3 POS            | `https://github.com/Mhmdsalha/saree3-pos-project`          | Python backend, React UI for desktop and mobile with phone barcode scanning; TypeScript + Python (+ Rust launcher) |
+| Graduation project    | `https://github.com/Mhmdsalha/graduation-project-platform` | React + Tailwind client, Node.js + Express API, MongoDB, JWT, Socket.IO; 8 screenshots in the repo                 |
+| Al-Amanah cars        | `https://github.com/Mhmdsalha/al-amanah-cars`              | Next.js, React, Tailwind CSS, optional Supabase; live `al-amanah-cars.vercel.app`                                  |
+| Al-Nakhba real estate | `https://github.com/Mhmdsalha/al-nakhba-real-estate`       | already in the seed data                                                                                           |
+| Oud abaya store       | `https://github.com/Mhmdsalha/oud-store-design`            | Standalone Next.js App Router + TypeScript storefront, frontend-only with mocked data; no Salla code or mention    |
+
+The Salla rule (non-goals) is about Salla platform work. A standalone Next.js storefront like Oud is publishable under the `store` category; Lamsa and Lolo (also `*-store-design.vercel.app`) would be too, if they have repos (asked).
+
+These settle part of the conflicts below: C-1 (the Saree3 UI is React, as the design says, plus TypeScript per the CV) and add a third Arzaq URL to C-3 (`arzaq-nine.vercel.app`, from the repo). The live URL for each project is still the owner's call.
 
 ## Conflicts for the owner
 
