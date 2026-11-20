@@ -37,18 +37,25 @@ describe("Supabase attempt store (A7 finding 1)", () => {
     const store = createSupabaseAttemptStore(
       fakeClient({ data: null, error: { code: "PGRST202", message: "function not found" } })
     );
-    await expect(store.register("k", 900)).rejects.toMatchObject({ code: "PGRST202" });
+    await expect(store.register("k", { windowSeconds: 900, maxPerKey: 5 })).rejects.toMatchObject({
+      code: "PGRST202"
+    });
   });
 
   it("throws on an empty success, like a 404 with no body", async () => {
     const store = createSupabaseAttemptStore(fakeClient({ data: null, error: null }));
-    await expect(store.register("k", 900)).rejects.toThrow("unexpected result");
+    await expect(store.register("k", { windowSeconds: 900, maxPerKey: 5 })).rejects.toThrow(
+      "unexpected result"
+    );
   });
 
   it("returns counts on success", async () => {
     const store = createSupabaseAttemptStore(
       fakeClient({ data: [{ key_count: 1, global_count: 4 }], error: null })
     );
-    expect(await store.register("k", 900)).toEqual({ keyCount: 1, globalCount: 4 });
+    expect(await store.register("k", { windowSeconds: 900, maxPerKey: 5 })).toEqual({
+      keyCount: 1,
+      globalCount: 4
+    });
   });
 });

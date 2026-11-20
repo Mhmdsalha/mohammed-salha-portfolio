@@ -10,6 +10,8 @@ import {
   isOverLimit
 } from "@/lib/auth/rate-limit";
 
+const LIMITS = { windowSeconds: LOGIN_WINDOW_SECONDS, maxPerKey: LOGIN_MAX_ATTEMPTS };
+
 describe("isOverLimit", () => {
   it("allows 5 attempts per client and refuses the 6th", () => {
     expect(isOverLimit({ keyCount: LOGIN_MAX_ATTEMPTS, globalCount: 5 })).toBe(false);
@@ -24,15 +26,15 @@ describe("isOverLimit", () => {
 describe("memory attempt store", () => {
   it("counts per client and globally, including the attempt being registered", async () => {
     const store = createMemoryAttemptStore();
-    expect(await store.register("a", LOGIN_WINDOW_SECONDS)).toEqual({
+    expect(await store.register("a", LIMITS)).toEqual({
       keyCount: 1,
       globalCount: 1
     });
-    expect(await store.register("a", LOGIN_WINDOW_SECONDS)).toEqual({
+    expect(await store.register("a", LIMITS)).toEqual({
       keyCount: 2,
       globalCount: 2
     });
-    expect(await store.register("b", LOGIN_WINDOW_SECONDS)).toEqual({
+    expect(await store.register("b", LIMITS)).toEqual({
       keyCount: 1,
       globalCount: 3
     });
@@ -41,11 +43,32 @@ describe("memory attempt store", () => {
   it("forgets attempts outside the window and after clear", async () => {
     let now = 0;
     const store = createMemoryAttemptStore(() => now);
-    await store.register("a", LOGIN_WINDOW_SECONDS);
+    await store.register("a", LIMITS);
     now += LOGIN_WINDOW_SECONDS * 1000 + 1;
-    expect((await store.register("a", LOGIN_WINDOW_SECONDS)).keyCount).toBe(1);
+    expect((await store.register("a", LIMITS)).keyCount).toBe(1);
     await store.clear("a");
-    expect((await store.register("a", LOGIN_WINDOW_SECONDS)).keyCount).toBe(1);
+    expect((await store.register("a", LIMITS)).keyCount).toBe(1);
+  });
+
+  it("does not store refused attempts, so one client cannot lock out everyone (re-review N1)", async () => {
+    const store = createMemoryAttemptStore();
+
+    for (let i = 0; i < 500; i++) await store.register("attacker", LIMITS);
+    const admin = await store.register("admin", LIMITS);
+
+    expect(admin).toEqual({ keyCount: 1, globalCount: LOGIN_MAX_ATTEMPTS + 1 });
+    expect(isOverLimit(admin)).toBe(false);
+  });
+
+  it("locks everyone out only once enough distinct clients are at their limit", async () => {
+    const store = createMemoryAttemptStore();
+    const clientsNeeded = LOGIN_GLOBAL_MAX_ATTEMPTS / LOGIN_MAX_ATTEMPTS;
+
+    for (let c = 0; c < clientsNeeded; c++) {
+      for (let i = 0; i < LOGIN_MAX_ATTEMPTS; i++) await store.register(`ip-${c}`, LIMITS);
+    }
+
+    expect(isOverLimit(await store.register("admin", LIMITS))).toBe(true);
   });
 });
 

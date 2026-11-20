@@ -81,7 +81,7 @@ Create a public Storage bucket named `projects`.
 
 The dashboard contact settings are stored automatically in a Supabase Storage bucket named `site-settings` as `settings.json`.
 
-Apply the SQL files in `supabase/migrations/` in name order (Supabase SQL editor or `supabase db push`). `0001_login_attempts.sql` creates the table and function behind the dashboard login rate limit: 5 attempts per 15 minutes per IP (on Vercel), and 100 per 15 minutes from all clients together.
+Apply the SQL files in `supabase/migrations/` in name order (Supabase SQL editor or `supabase db push`). `0001_login_attempts.sql` creates the table and function behind the dashboard login rate limit: 5 attempts per 15 minutes per IP, and 100 per 15 minutes from all clients together (each IP counts for at most 5). Per-IP limits need Vercel's "Automatically expose System Environment Variables" setting (on by default); without it every visitor shares one limit. To unlock the login after an attack, run `delete from public.login_attempts;` in the SQL editor.
 
 ## Seed Projects
 
@@ -95,7 +95,7 @@ node scripts/seed-projects.mjs
 
 1. Import this GitHub repository in Vercel.
 2. Add the Supabase and dashboard auth environment variables listed above, in both Production and Preview.
-3. Use the default Next.js build settings.
+3. Use the default Next.js build settings. Keep the Build Command as `npm run build`: it also runs a check that the auth middleware was compiled.
 4. Deploy.
 
 Build command:

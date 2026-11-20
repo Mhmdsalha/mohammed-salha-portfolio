@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 type RpcClient = {
   rpc(
     fn: "register_login_attempt",
-    args: { p_key_hash: string; p_window_seconds: number }
+    args: { p_key_hash: string; p_window_seconds: number; p_max_per_key: number }
   ): PromiseLike<{ data: unknown; error: unknown }>;
   from(table: "login_attempts"): {
     delete(): { eq(column: "key_hash", value: string): PromiseLike<{ error: unknown }> };
@@ -35,10 +35,11 @@ export function createSupabaseAttemptStore(
   client: RpcClient = createAdminClient() as unknown as RpcClient
 ): AttemptStore {
   return {
-    async register(keyHash, windowSeconds) {
+    async register(keyHash, { windowSeconds, maxPerKey }) {
       const { data, error } = await client.rpc("register_login_attempt", {
         p_key_hash: keyHash,
-        p_window_seconds: windowSeconds
+        p_window_seconds: windowSeconds,
+        p_max_per_key: maxPerKey
       });
 
       if (error) {

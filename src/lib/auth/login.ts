@@ -1,4 +1,9 @@
-import { LOGIN_WINDOW_SECONDS, isOverLimit, type AttemptStore } from "@/lib/auth/rate-limit";
+import {
+  LOGIN_MAX_ATTEMPTS,
+  LOGIN_WINDOW_SECONDS,
+  isOverLimit,
+  type AttemptStore
+} from "@/lib/auth/rate-limit";
 
 export type LoginOutcome = "ok" | "invalid" | "blocked" | "unavailable";
 
@@ -16,7 +21,10 @@ export async function attemptLogin(input: {
   let counts;
 
   try {
-    counts = await input.store.register(input.keyHash, LOGIN_WINDOW_SECONDS);
+    counts = await input.store.register(input.keyHash, {
+      windowSeconds: LOGIN_WINDOW_SECONDS,
+      maxPerKey: LOGIN_MAX_ATTEMPTS
+    });
   } catch (error) {
     // Without a working counter the password could be brute-forced, so fail closed.
     console.error("Login rate limiter unavailable:", error);
