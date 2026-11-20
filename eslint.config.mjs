@@ -10,7 +10,32 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript")
+  {
+    ignores: [
+      ".next/**",
+      "out/**",
+      "dist/**",
+      "coverage/**",
+      "next-env.d.ts",
+      // Design mockup export: reference only, not app code (docs/DECISIONS.md D-012).
+      "docs/design/**"
+    ]
+  },
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    // QA gate 1 (docs/PLAN.md): no `any`, no `@ts-ignore`.
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/ban-ts-comment": ["error", { "ts-ignore": true }]
+    }
+  },
+  {
+    // QA gate 1: no `console.log` in app code. CLI scripts under scripts/ may print.
+    files: ["src/**", "middleware.ts"],
+    rules: {
+      "no-console": ["error", { allow: ["warn", "error"] }]
+    }
+  }
 ];
 
 export default eslintConfig;
