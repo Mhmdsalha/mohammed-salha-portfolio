@@ -131,6 +131,19 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 - **Middleware rewrite** also removed the dead branch from audit C1 (part of P0-3).
 - **E2E proof:** Vitest covers the middleware (8 forged-token variants), every exported action without and with forged sessions (a missing guard fails the test), a 30-request parallel burst, the store's error handling, and the migration SQL itself, run in PGlite (real Postgres in WASM) including role permissions. HTTP probes against a production build confirmed both layers: forged cookies on dashboard pages get a 307 to login with the cookie cleared; a server action POSTed to a public route is forwarded by Next to its dashboard page, where the middleware stops it before it runs. The Playwright version of the "Attacker" path lands with P0-2, which sets Playwright up.
 
+## D-020 P0-3 scope: what the clean-up removes now and what waits — Accepted (2026-11-20)
+
+Numbered D-020 because D-019 is on the open P0-2 branch.
+
+- **Removed:** the two unused avatar PNGs (3.2 MB) and the unused `LenosGX.ttf` (264 KB); `src/lib/upload.ts` and `src/lib/supabase/client.ts`, the browser anon-key upload path (audit A4) and its only caller; the three Salla stores (Lamsa, Oud, Lolo) from `scripts/seed-projects.mjs` and `src/data/mock-projects.ts`. The dead middleware branch went with D1-1.
+- **`public/` is 1.2 MB, not yet under 300 KB.** What remains is in use by the current site: `mohammed-avatar-hero.png` (1.0 MB, the hero) and three local fonts (189 KB). They go when P4-2 switches the hero to the design's 45 KB WebP (D-016) and P2-1 moves fonts to `next/font`. The 300 KB criterion is checked again after P2-1 and P4-2.
+- **"No salla string in repo" is not met by P0-3 alone**, because the remaining mentions belong to other owners or need a data migration:
+  - Copy in `HeroSection`, `AboutSection`, `ServicesSection`, `ProjectFilter` and the message files (A3/A4): removed when P3-1 and P4 rewrite them.
+  - Site metadata in `src/app/layout.tsx` (A4): P3-3.
+  - The `salla` category in `src/types`, the project Zod schema and the dashboard form, plus the Salla rows in the production database (Lamsa and Lolo are still live on the site): D1-2, together with the category migration (D-002), because dropping the enum before the rows are remapped would break editing those projects. Deleting production rows needs the owner's confirmation.
+  - Mentions in `docs/` are intentional (they describe the rule).
+- **Check:** `git grep -il salla -- src scripts` must be empty once P3-1, P4 and D1-2 are merged.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Content-Security-Policy and security headers in `next.config.ts` (A1).
