@@ -130,6 +130,15 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 - **Middleware location:** with an `src/app` directory Next only loads `src/middleware.ts`; the old root `middleware.ts` was never compiled (A7 finding, also true before D1-1). It now lives in `src/`, and `npm run build` fails through `scripts/check-build.mjs` (`postbuild`) if the middleware manifest is empty. The check runs only through `npm run build`: keep Vercel's Build Command at its default (`npm run build`), because overriding it to `next build` silently skips the check. It also assumes the default `.next` output directory. jose is imported from `jose/jwt/sign` and `jose/jwt/verify` only, because its main entry pulls in compression APIs the Edge runtime lacks and triggers build warnings.
 - **Middleware rewrite** also removed the dead branch from audit C1 (part of P0-3).
 - **E2E proof:** Vitest covers the middleware (8 forged-token variants), every exported action without and with forged sessions (a missing guard fails the test), a 30-request parallel burst, the store's error handling, and the migration SQL itself, run in PGlite (real Postgres in WASM) including role permissions. HTTP probes against a production build confirmed both layers: forged cookies on dashboard pages get a 307 to login with the cookie cleared; a server action POSTed to a public route is forwarded by Next to its dashboard page, where the middleware stops it before it runs. The Playwright version of the "Attacker" path lands with P0-2, which sets Playwright up.
+- **Verified on production (2026-11-20):** a forged `dashboard_token=authenticated` cookie on `/dashboard` got a 307 to login with both cookies cleared; 7 empty-password logins returned "Invalid password." five times, then "Too many attempts." twice; `login_attempts` held 5 rows (refused attempts not stored). The test rows were deleted afterwards. Per-IP bucketing on Vercel was not separately verified (all attempts came from one address).
+
+## D-019 Playwright setup and baseline (P0-2) — Accepted (2026-11-20)
+
+- **Two projects** in `playwright.config.ts`: `e2e` (behaviour tests, `npm run e2e`) and `baseline` (`npm run e2e:baseline`, opt-in through `CAPTURE_BASELINE`, so a plain `playwright test` never overwrites the committed baseline; partial runs never rewrite `metrics.json`). Both target `BASE_URL` (default `http://localhost:3000`), so the same tests run against a local build, a Vercel preview or production.
+- **Browser:** `PW_CHANNEL=msedge` uses the installed Edge locally, avoiding a separate browser download. CI does not run e2e yet; when it does (backlog) it installs Playwright's Chromium.
+- **Baseline images are references, not snapshots:** full-page JPEGs (quality 60, 2.5 MB total) of the pre-rebuild site, plus `metrics.json` and a Lighthouse summary. Pixel-diff visual tests (QA gate 3) start with the new design in P4, with PNG snapshots stored by Playwright.
+- **Attacker path in a browser:** `e2e/security.spec.ts` checks forged cookies (legacy constant, `alg:none`, garbage) and no cookie on three dashboard routes, plus the locale-prefixed redirect. It makes no login attempts, so it never touches the rate limit and is safe to run against production.
+- **Not in CI yet:** e2e needs a running deployment. Wiring `npm run e2e` to the Vercel preview URL in CI is a follow-up for A6 (backlog).
 
 ## D-020 P0-3 scope: what the clean-up removes now and what waits — Accepted (2026-11-20)
 
@@ -149,5 +158,6 @@ Numbered D-020 because D-019 is on the open P0-2 branch.
 
 ## Backlog (not in scope until A0 schedules it)
 
+- Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
 - Content-Security-Policy and security headers in `next.config.ts` (A1).
 - Slug redirects table if slugs ever change after publish (R9 alternative).
