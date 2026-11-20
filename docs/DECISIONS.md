@@ -134,8 +134,8 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 
 ## D-019 Playwright setup and baseline (P0-2) — Accepted (2026-11-20)
 
-- **Two projects** in `playwright.config.ts`: `e2e` (behaviour tests, `npm run e2e`) and `baseline` (`npm run e2e:baseline`, on demand only). Both target `BASE_URL` (default `http://localhost:3000`), so the same tests run against a local build, a Vercel preview or production.
-- **Browser:** `PW_CHANNEL=msedge` uses the installed Edge locally, avoiding a separate browser download; CI will use Playwright's Chromium.
+- **Two projects** in `playwright.config.ts`: `e2e` (behaviour tests, `npm run e2e`) and `baseline` (`npm run e2e:baseline`, opt-in through `CAPTURE_BASELINE`, so a plain `playwright test` never overwrites the committed baseline; partial runs never rewrite `metrics.json`). Both target `BASE_URL` (default `http://localhost:3000`), so the same tests run against a local build, a Vercel preview or production.
+- **Browser:** `PW_CHANNEL=msedge` uses the installed Edge locally, avoiding a separate browser download. CI does not run e2e yet; when it does (backlog) it installs Playwright's Chromium.
 - **Baseline images are references, not snapshots:** full-page JPEGs (quality 60, 2.5 MB total) of the pre-rebuild site, plus `metrics.json` and a Lighthouse summary. Pixel-diff visual tests (QA gate 3) start with the new design in P4, with PNG snapshots stored by Playwright.
 - **Attacker path in a browser:** `e2e/security.spec.ts` checks forged cookies (legacy constant, `alg:none`, garbage) and no cookie on three dashboard routes, plus the locale-prefixed redirect. It makes no login attempts, so it never touches the rate limit and is safe to run against production.
 - **Not in CI yet:** e2e needs a running deployment. Wiring `npm run e2e` to the Vercel preview URL in CI is a follow-up for A6 (backlog).
@@ -143,6 +143,5 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
-
 - Content-Security-Policy and security headers in `next.config.ts` (A1).
 - Slug redirects table if slugs ever change after publish (R9 alternative).

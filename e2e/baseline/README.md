@@ -2,11 +2,21 @@
 
 Captured 2026-11-20 from production (`https://mohammed-salha-portfolio.vercel.app`, commit `6a6b6b0`), with Microsoft Edge through Playwright, reduced motion on. These are **reference images** for comparing the rebuild with what came before; they are not visual-regression snapshots (the new design replaces the page entirely). Visual snapshots of the new design are added with the P4 tickets.
 
-Re-capture with:
+Re-capture the screenshots and `metrics.json` (opt-in; a plain `playwright test` skips them):
 
 ```bash
 BASE_URL=https://mohammed-salha-portfolio.vercel.app PW_CHANNEL=msedge npm run e2e:baseline
 ```
+
+Re-run Lighthouse (mobile is its default preset; set `CHROME_PATH` to Chrome or Edge), then summarise:
+
+```bash
+npx -y lighthouse@12.8.2 https://mohammed-salha-portfolio.vercel.app/ar --output=json --output-path=lh-ar.json --chrome-flags="--headless=new"
+npx -y lighthouse@12.8.2 https://mohammed-salha-portfolio.vercel.app/en --output=json --output-path=lh-en.json --chrome-flags="--headless=new"
+node scripts/lighthouse-summary.mjs lh-ar.json lh-en.json
+```
+
+The full reports (about 700 KB each) are not committed; `lighthouse.json` keeps the scores, metrics and failing audits.
 
 ## Files
 

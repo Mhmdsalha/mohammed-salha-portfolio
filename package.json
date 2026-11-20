@@ -18,7 +18,7 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "e2e": "playwright test --project=e2e",
-    "e2e:baseline": "playwright test --project=baseline --workers=1"
+    "e2e:baseline": "node scripts/capture-baseline.mjs"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx}": [

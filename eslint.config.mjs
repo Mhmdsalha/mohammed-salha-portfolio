@@ -17,6 +17,8 @@ const eslintConfig = [
       "out/**",
       "dist/**",
       "coverage/**",
+      "test-results/**",
+      "playwright-report/**",
       "next-env.d.ts",
       // Design mockup export: reference only, not app code (docs/DECISIONS.md D-012).
       "docs/design/**"
