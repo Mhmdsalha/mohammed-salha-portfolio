@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Only scan app code for class names: test strings and docs must not add utilities to the build. */
+@source not "../../tests";
+@source not "../../e2e";
+@source not "../../scripts";
+@source not "../../docs";
+
 /*
  * Design tokens for the Editorial (CV version) design: docs/design/SPEC.md (P2-1).
  * This is the only file allowed to hold colour values and font names (`npm run lint` checks it).
@@ -27,9 +33,14 @@
   --color-on-accent: #ffffff;
 
   /* Type families (loaded with next/font in src/app/fonts.ts) */
-  --font-display: var(--font-alexandria), "Segoe UI", system-ui, sans-serif;
-  --font-body: var(--font-plex-arabic), "Segoe UI", system-ui, sans-serif;
-  --font-label: var(--font-plex-mono), ui-monospace, monospace;
+  /* Each var() has its own fallback, so an element outside <html>'s font classes still gets a
+     usable stack instead of an invalid declaration. */
+  --font-display: var(--font-alexandria, "Segoe UI"), "Segoe UI", system-ui, sans-serif;
+  --font-body: var(--font-plex-arabic, "Segoe UI"), "Segoe UI", system-ui, sans-serif;
+  /* Plex Mono has no Arabic glyphs; Arabic labels such as "01 / التخصص" fall to Plex Arabic. */
+  --font-label:
+    var(--font-plex-mono, ui-monospace), var(--font-plex-arabic, "Segoe UI"), ui-monospace,
+    monospace;
 
   /* Type scale. Arabic display text keeps line-height >= 1.15 and no letter-spacing (R3). */
   --text-wordmark: clamp(56px, 14vw, 220px);
@@ -52,6 +63,10 @@
   --text-closing--line-height: 1.7;
   --text-lead: clamp(16px, 1.6vw, 19px);
   --text-lead--line-height: 1.9;
+  --text-marquee: clamp(22px, 2.6vw, 32px);
+  --text-marquee--line-height: 1.3;
+  --text-frame-title: clamp(32px, 4.6vw, 64px);
+  --text-frame-title--line-height: 1.25;
 
   /* Layout */
   --container-page: 1280px;
@@ -63,6 +78,14 @@
   --radius-tile: 20px;
   --radius-tab: 16px;
   --radius-box: 14px;
+
+  /* Shadows */
+  --shadow-lift: 0 12px 24px rgb(20 20 20 / 0.18);
+  --shadow-portrait: inset 0 0 0 6px var(--color-paper), 0 30px 60px rgb(20 20 20 / 0.18);
+
+  /* Outlined display text (-webkit-text-stroke width); see SPEC V-10 / R20 */
+  --stroke-outline: 1.5px;
+  --stroke-outline-thin: 1.2px;
 
   /* Easing */
   --ease-reveal: cubic-bezier(0.2, 0.8, 0.2, 1);
