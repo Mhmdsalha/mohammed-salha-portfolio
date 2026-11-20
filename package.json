@@ -16,7 +16,9 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "e2e": "playwright test --project=e2e",
+    "e2e:baseline": "node scripts/capture-baseline.mjs"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx}": [
@@ -44,6 +46,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.17",
     "@eslint/eslintrc": "^3.2.0",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",

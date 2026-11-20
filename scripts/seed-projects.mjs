@@ -46,57 +46,6 @@ const projects = [
     order_num: 1
   },
   {
-    slug: "lamsa-beauty-store",
-    title_ar: "لمسة - متجر جمال فاخر",
-    title_en: "Lamsa - Luxury Beauty Store",
-    description_ar:
-      "متجر سلة فاخر لمنتجات الجمال، يركز على عرض المنتجات بطريقة راقية وتجربة شراء واضحة وسريعة.",
-    description_en:
-      "A premium Salla beauty storefront with refined product discovery, elegant sections, and conversion-focused shopping flows.",
-    category: "salla",
-    tags: ["Salla", "Next.js", "Tailwind CSS", "Arabic UX", "E-commerce"],
-    thumbnail_url: null,
-    images: [],
-    live_url: "https://lamsa-store-design.vercel.app/",
-    github_url: null,
-    featured: false,
-    order_num: 2
-  },
-  {
-    slug: "oud-abaya-store",
-    title_ar: "عُود - متجر عبايات فاخر",
-    title_en: "Oud - Luxury Abaya Store",
-    description_ar:
-      "تجربة متجر سلة داكنة وفاخرة لعلامة عبايات، تجمع بين الطابع العربي الأصيل وتجربة تجارة حديثة.",
-    description_en:
-      "A luxury abaya Salla storefront with a dark editorial identity, RTL polish, and modern commerce patterns.",
-    category: "salla",
-    tags: ["Salla", "Next.js", "Tailwind CSS", "RTL", "Luxury UI"],
-    thumbnail_url: null,
-    images: [],
-    live_url: "https://oud-store-design.vercel.app/",
-    github_url: null,
-    featured: false,
-    order_num: 3
-  },
-  {
-    slug: "lolo-kids-store",
-    title_ar: "لولو - متجر أطفال",
-    title_en: "Lolo - Children's Store",
-    description_ar:
-      "متجر أطفال عربي بتصميم لطيف ومنظم، يوازن بين إحساس مرح وواجهة شراء عملية وسهلة.",
-    description_en:
-      "A playful premium Salla kids store with polished product browsing, Arabic-friendly layout, and soft visual hierarchy.",
-    category: "salla",
-    tags: ["Salla", "Next.js", "Tailwind CSS", "Responsive UI", "Kids Store"],
-    thumbnail_url: null,
-    images: [],
-    live_url: "https://lolo-store-design.vercel.app/",
-    github_url: null,
-    featured: false,
-    order_num: 4
-  },
-  {
     slug: "arzaq-marketplace",
     title_ar: "أرزاق - منصة عمل حر",
     title_en: "Arzaq - Freelance Marketplace",
