@@ -109,7 +109,7 @@
       "previous": "Previous project",
       "next": "Next project",
       "pauseAutoplay": "Pause autoplay",
-      "playAutoplay": "Play autoplay",
+      "playAutoplay": "Resume autoplay",
       "caseStudy": "Case study",
       "live": "Live preview",
       "source": "Code on GitHub",
@@ -119,7 +119,7 @@
       "index": "02",
       "eyebrow": "Archive",
       "title": "All projects",
-      "countLabel": "{count, plural, one {# project} other {# projects}}",
+      "countLabel": "{count, plural, =0 {no projects} one {# project} other {# projects}}",
       "openCaseStudy": "Open the {name} case study"
     },
     "projectLabels": {
@@ -135,8 +135,14 @@
     "projectKinds": {
       "webapp": "Web app",
       "system": "Management system",
-      "platform": "Services platform",
+      "platform": "Service platform",
       "store": "Online store"
+    },
+    "projectKindsShort": {
+      "webapp": "Web",
+      "system": "System",
+      "platform": "Platform",
+      "store": "Store"
     },
     "skills": {
       "index": "03",
@@ -151,7 +157,7 @@
         "database": "Databases",
         "infra": "Infrastructure & deployment"
       },
-      "total": "tools and technologies across four areas",
+      "total": "{count, plural, one {tool} other {tools and technologies}} across {areas, plural, one {# area} other {# areas}}",
       "usedIn": "Used in: {projects}"
     },
     "education": {
@@ -168,13 +174,9 @@
           "label": "University",
           "value": "Islamic University of Gaza"
         },
-        "years": {
-          "label": "Years",
-          "value": "2020 – 2025"
-        },
         "project": {
           "label": "Graduation project",
-          "value": "Graduation-project management platform with real-time updates"
+          "value": "Project management platform with real-time updates"
         },
         "stack": {
           "label": "Project stack",

@@ -109,7 +109,7 @@
       "previous": "المشروع السابق",
       "next": "المشروع التالي",
       "pauseAutoplay": "إيقاف التشغيل التلقائي",
-      "playAutoplay": "تشغيل تلقائي",
+      "playAutoplay": "استئناف التشغيل التلقائي",
       "caseStudy": "دراسة الحالة",
       "live": "معاينة مباشرة",
       "source": "الكود على GitHub",
@@ -119,7 +119,7 @@
       "index": "02",
       "eyebrow": "الأرشيف",
       "title": "كل المشاريع",
-      "countLabel": "{count, plural, one {مشروع واحد} two {مشروعان} few {# مشاريع} many {# مشروعاً} other {# مشروع}}",
+      "countLabel": "{count, plural, zero {لا مشاريع} one {مشروع واحد} two {مشروعان} few {# مشاريع} many {# مشروعاً} other {# مشروع}}",
       "openCaseStudy": "افتح دراسة حالة {name}"
     },
     "projectLabels": {
@@ -138,6 +138,12 @@
       "platform": "منصة خدمات",
       "store": "متجر إلكتروني"
     },
+    "projectKindsShort": {
+      "webapp": "ويب",
+      "system": "نظام",
+      "platform": "منصة",
+      "store": "متجر"
+    },
     "skills": {
       "index": "03",
       "eyebrow": "المهارات",
@@ -151,7 +157,7 @@
         "database": "قواعد البيانات",
         "infra": "البنية والنشر"
       },
-      "total": "أداة وتقنية عبر أربعة مجالات",
+      "total": "{count, plural, zero {أدوات} one {أداة} two {أداتان} few {أدوات وتقنيات} many {أداةً وتقنية} other {أداة وتقنية}} عبر {areas, plural, zero {لا مجالات} one {مجال واحد} two {مجالين} few {# مجالات} many {# مجالاً} other {# مجال}}",
       "usedIn": "استُخدمت في: {projects}"
     },
     "education": {
@@ -168,13 +174,9 @@
           "label": "الجامعة",
           "value": "الجامعة الإسلامية — غزة"
         },
-        "years": {
-          "label": "الفترة",
-          "value": "2020 – 2025"
-        },
         "project": {
           "label": "مشروع التخرج",
-          "value": "منصة لإدارة مشاريع التخرج بتحديثات لحظية"
+          "value": "منصة لإدارة المشاريع بتحديثات لحظية"
         },
         "stack": {
           "label": "تقنيات المشروع",

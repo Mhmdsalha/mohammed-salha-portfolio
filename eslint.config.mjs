@@ -40,19 +40,44 @@ const eslintConfig = [
     }
   },
   {
-    // P3-1: every visible string in the new site comes from src/messages (AR and EN). Applies to
-    // the new site's code only; old-site files are deleted in P4-10, and the dashboard keeps its
-    // own copy until the D5 tickets (D-025). Symbols that are not words are allowed.
+    // P3-1: every visible string in the new site comes from src/messages (AR and EN) (D-025).
+    // Covers whole directories so new files are included automatically; the old-site files listed
+    // under `ignores` are deleted in P4-10. The dashboard keeps its own copy until the D5 tickets.
     files: [
       "src/components/sections/home/**",
       "src/components/site/**",
-      "src/components/ui/{Button,Icon,LineReveal,Marquee,Reveal,SectionHeader,Tag}.tsx",
-      "src/app/\\[locale\\]/preview/**"
+      "src/components/ui/**",
+      "src/app/\\[locale\\]/**"
+    ],
+    ignores: [
+      "src/components/ui/{Background,GlassCard,LanguageSwitcher,NeonButton,ScrollReveal,SectionLabel,TagPill}.tsx",
+      "src/app/\\[locale\\]/page.tsx",
+      "src/app/\\[locale\\]/projects/**"
     ],
     rules: {
+      // Text children. Symbols that are not words are allowed.
       "react/jsx-no-literals": [
         "error",
         { noStrings: true, ignoreProps: true, allowedStrings: ["✦", "—", "·", "/", "(", ")", "."] }
+      ],
+      // What jsx-no-literals lets through: user-facing attributes, and text picked by a condition.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "JSXAttribute[name.name=/^(aria-label|aria-description|aria-roledescription|aria-valuetext|alt|title|placeholder)$/] > Literal",
+          message: "User-facing attribute text must come from src/messages (t(...))."
+        },
+        {
+          selector:
+            "JSXAttribute[name.name=/^(aria-label|aria-description|aria-roledescription|aria-valuetext|alt|title|placeholder)$/] > JSXExpressionContainer > Literal",
+          message: "User-facing attribute text must come from src/messages (t(...))."
+        },
+        {
+          selector:
+            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > :matches(ConditionalExpression, LogicalExpression) > Literal[value=/[A-Za-z\\u0600-\\u06FF]/]",
+          message: "Text chosen by a condition must come from src/messages (t(...))."
+        }
       ]
     }
   }
