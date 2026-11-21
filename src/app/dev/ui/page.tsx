@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { fontVariables } from "@/app/fonts";
 import { Button } from "@/components/ui/Button";
 import { LineReveal } from "@/components/ui/LineReveal";
 import { Marquee } from "@/components/ui/Marquee";
@@ -144,7 +145,7 @@ export default function UiPrimitivesPage() {
   if (process.env.NODE_ENV === "production") notFound();
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main className={`${fontVariables} min-h-screen bg-paper text-ink`}>
       <Demo locale="ar" />
       <Demo locale="en" />
     </main>

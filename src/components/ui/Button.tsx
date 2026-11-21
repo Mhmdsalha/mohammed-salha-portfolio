@@ -99,6 +99,15 @@ export function Button(props: ButtonProps) {
 
   if (typeof rest.href === "string") {
     const { href, ...anchor } = rest as LinkProps;
+    // Files (e.g. /cv.pdf) and downloads are plain links: <Link> would try to route to them as
+    // pages and prefetch them.
+    if (anchor.download !== undefined || /\.[a-z0-9]{2,5}$/i.test(href.split(/[?#]/)[0])) {
+      return (
+        <a href={href} className={classes} {...anchor}>
+          {content}
+        </a>
+      );
+    }
     return (
       <Link href={href} className={classes} {...anchor}>
         {content}
