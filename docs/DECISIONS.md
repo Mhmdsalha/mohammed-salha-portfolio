@@ -145,7 +145,7 @@ Use the design's 45 KB cut-out WebP (`docs/design/editorial-cv/assets/…webp`) 
 Numbered D-020 because D-019 is on the open P0-2 branch.
 
 - **Removed:** the two unused avatar PNGs (3.2 MB) and the unused `LenosGX.ttf` (264 KB); `src/lib/upload.ts` and `src/lib/supabase/client.ts`, the browser anon-key upload path (audit A4) and its only caller; the three Salla stores (Lamsa, Oud, Lolo) from `scripts/seed-projects.mjs` and `src/data/mock-projects.ts`. The dead middleware branch went with D1-1.
-- **`public/` went from 4.7 MB to 1.2 MB, not yet under 300 KB.** What remains is in use by the current site: `mohammed-avatar-hero.png` (1.0 MB, the hero) and three local fonts (189 KB). They go when P4-2 switches the hero to the design's 45 KB WebP (D-016) and P2-1 moves fonts to `next/font`. The 300 KB criterion is checked again after P2-1 and P4-2.
+- **`public/` went from 4.7 MB to 1.2 MB, not yet under 300 KB.** What remains is in use by the current site: `mohammed-avatar-hero.png` (1.0 MB, the hero) and three local fonts (189 KB). They go with P4-10, which swaps the new home page in (D-023; P4-2 builds the hero on a preview route, so the old hero still uses the PNG), and with the last old component using the local fonts. The 300 KB criterion is checked again after P2-1 and P4-2.
 - **"No salla string in repo" is not met by P0-3 alone**, because the remaining mentions belong to other owners or need a data migration:
   - Copy in `HeroSection`, `AboutSection`, `ServicesSection`, `ProjectFilter` and the message files (A3/A4): removed when P3-1 and P4 rewrite them.
   - Site metadata in `src/app/layout.tsx` (A4): P3-3.
@@ -192,8 +192,50 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - the outline paint order.
 - **Seen in the demo, for P4:** a mixed line such as "ومطوّر Full-Stack" can wrap with the Latin word split across lines at 360px. P4-2 should wrap Latin runs in `<bdi>`/`whitespace-nowrap` or choose break points. The old unlayered `[dir="rtl"] { font-family … }` rule in `globals.css` beats Tailwind utilities on any element that carries `dir`, so P4 sections must set `font-body` on a child of the `dir` element, until P3-2 moves `dir` to `<html>` and the old rule is removed.
 
+## D-023 Build the new home page on a preview route; hero findings (P4-2) — Accepted (2026-11-21)
+
+- **Preview route, not a live swap:** the new sections are assembled on `/[locale]/preview` (noindex, unlinked), one P4 ticket at a time. The live home page keeps the old design until **P4-10** swaps the preview in, so the live site never shows a light editorial hero on top of the old dark sections. P4-10 also:
+  - deletes the old sections, components and `globals.css` block;
+  - removes `mohammed-avatar-hero.png` (moved here from P4-2's P0-3 follow-up) and the old local fonts;
+  - moves `fontVariables` to `<html>`.
+- **Hero** (`src/components/sections/home/Hero.tsx`): a server component, CSS-only motion, with copy in `home.hero` in both message files. A4's message files gained these keys under an A0 exception: the hero cannot ship without copy, and P3-1 will review them. It has:
+  - the availability line with a pulsing dot;
+  - `LineReveal` h1 (`id="hero-title"`, which labels the section), with the second line outlined;
+  - rotating role words: animated words are `aria-hidden`, and one sentence is announced instead;
+  - the lead paragraph;
+  - two CTAs. The CV button points at `/cv.pdf`, which exists once D5-5 ships;
+  - the portrait: the design's 45 KB WebP, clipped by a `rounded-full overflow-hidden` circle, `priority` + `fetchPriority="high"`, a scale-in that never starts transparent (V-1);
+  - a rotating text ring and a dashed ring.
+- **Bugs found in the browser while building:**
+  1. In an RTL page the SVG ring text starts at the end of the path and runs off it, so nothing was drawn. The text now has `direction="ltr"`; Arabic still reads right-to-left by the bidi rules.
+  2. While turning, the square ring SVGs' corners caused 10px of sideways scroll at 360px (R4). They are now clipped by a round wrapper. The test freezes them at 45°, the worst angle.
+  3. `Button` now renders a plain `<a>` for real file types (pdf, images, docs) and `download` links; other links, domains and dotted routes keep `<Link>`.
+  4. `LineReveal` lines get 0.06em of horizontal slack, so an outline at the end of a line is not shaved by the clip.
+- **Ring text:** Arabic repeats the phrase three times to go round the circle (letter-spacing would break the joins, R3). English uses `textLength` with `lengthAdjust="spacing"` to fill it, as the design's 0.6 letter-spacing did. "Full-Stack" is spelt the same in the ring and the title.
+- **Fonts were broken in the first version (A7 review).** Moving `fontVariables` from `<html>` to the page left the `static` family tokens resolving on `:root`, where the next/font variables did not exist, so everything rendered in Segoe UI and no web font loaded. The family tokens are now an `@theme inline` block: each `font-*` utility carries the `var()` chain and resolves on the element. Browser tests now check that the title is in Alexandria and the ring in IBM Plex Sans Arabic, and that both font files really loaded.
+- **Font preloading:** only Alexandria is preloaded (one variable font, 2 files). Preloading IBM Plex Sans Arabic would add 8 files (about 220 KB) on mobile. **Windows builds emit no preloads at all:** Next 15.5 writes an empty `next-font-manifest.json` there, because it matches the loader path with `/` only (found by the reviewer). Linux builds (CI, Vercel) are unaffected, and nothing in this repo disables preloading.
+- **LCP does not meet the 2.0 s budget.** Lighthouse 12.8.2, mobile, local production build with the fonts working, three runs each:
+
+  | Page          | Performance | Accessibility | FCP    | LCP         | CLS | Font files |
+  | ------------- | ----------- | ------------- | ------ | ----------- | --- | ---------- |
+  | `/ar/preview` | 92          | 100           | 2.13 s | 3.01–3.02 s | 0   | 6          |
+  | `/en/preview` | 96–97       | 100           | 1.38 s | 2.52–2.60 s | 0   | 3          |
+
+  The live page's baseline was 65 / 62 performance and 2.9 / 3.4 s LCP. The earlier 2.1 s figure was measured with the fonts broken and is withdrawn. The LCP element is the decorative ring text. On the Arabic page, Lighthouse's simulated slow 4G counts the six font files the first paint needs (Arabic and Latin subsets of Alexandria and of Plex Arabic 400/600), which pushes FCP itself past 2.0 s. These are local Windows numbers without Alexandria's preload, so they are a pessimistic case. **Open for the owner** (P4-2 stays open): accept a higher LCP budget for `/ar`, or cut first-paint font bytes, for example by drawing the decorative ring in a system font, dropping a family or weight from the hero, or self-subsetting. Re-measure on the Vercel production build (Linux, with preloads) once merged. SEO 63 on the preview is expected (its own `noindex`). `/favicon.ico` is a 404 site-wide (P3-3).
+
+- **Local measuring pitfall:** `next dev` and `next start` share `.next`. Starting a dev server while a production server runs overwrites the built CSS, and pages then render in Times New Roman. One measurement was discarded for this reason. Never run both from the same checkout at once.
+- **Tests:** `e2e/hero.spec.ts`, 10 tests, which run against production builds too. They check:
+  - the portrait stays inside its circle at 360, 768, 1280 and 1920px in both locales;
+  - no sideways scroll, with the rings frozen at their worst angle;
+  - the accessible heading and words;
+  - the LCP-safe portrait (high priority, preloaded, opacity 1 from the start);
+  - motion is off under reduced motion and on otherwise;
+  - the CV link is a plain download link;
+  - `noindex`.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
+- Report the Windows `next-font-manifest.json` path bug upstream, or measure on Linux only (D-023).
 - Content-Security-Policy and security headers in `next.config.ts` (A1).
 - Slug redirects table if slugs ever change after publish (R9 alternative).

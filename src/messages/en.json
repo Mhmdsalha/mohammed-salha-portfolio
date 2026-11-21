@@ -40,5 +40,25 @@
   },
   "footer": {
     "built": "Designed and built from Gaza, Palestine"
+  },
+  "home": {
+    "hero": {
+      "availability": "Available for work — full-time or freelance",
+      "titleLine1": "Computer engineer",
+      "titleLine2": "and <latin>Full-Stack</latin> developer",
+      "builds": "I build",
+      "words": [
+        "service platforms",
+        "point-of-sale systems",
+        "admin dashboards",
+        "fast Arabic interfaces"
+      ],
+      "wordsSentence": "I build service platforms, point-of-sale systems, admin dashboards and fast Arabic interfaces.",
+      "lead": "Computer Engineering graduate from the Islamic University of Gaza. I work across the whole product — from the interface and user experience to the server and database — with a focus on Arabic platforms and RTL experiences.",
+      "ctaProjects": "View projects",
+      "ctaCv": "Download CV",
+      "portraitAlt": "Portrait of Mohammed Salha",
+      "ring": "Computer engineer ✦ Full-Stack developer ✦ Gaza, Palestine ✦ Computer engineer ✦ Full-Stack developer ✦ Gaza, Palestine ✦"
+    }
   }
 }

@@ -99,6 +99,20 @@ export function Button(props: ButtonProps) {
 
   if (typeof rest.href === "string") {
     const { href, ...anchor } = rest as LinkProps;
+    // Files (e.g. /cv.pdf) and downloads are plain links: <Link> would try to route to them as
+    // pages and prefetch them.
+    // Only real file types count, so domains (https://arzaq.app) and dotted routes keep <Link>.
+    const path = href.split(/[?#]/)[0];
+    const isFile = /\.(?:pdf|zip|png|jpe?g|webp|avif|gif|svg|txt|csv|json|docx?|xlsx?)$/i.test(
+      path
+    );
+    if ((anchor.download !== undefined && anchor.download !== false) || isFile) {
+      return (
+        <a href={href} className={classes} {...anchor}>
+          {content}
+        </a>
+      );
+    }
     return (
       <Link href={href} className={classes} {...anchor}>
         {content}
