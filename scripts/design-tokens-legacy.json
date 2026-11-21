@@ -4,7 +4,6 @@
     "src/app/[locale]/projects/[slug]/page.tsx",
     "src/app/dashboard/page.tsx",
     "src/app/dashboard/projects/page.tsx",
-    "src/app/layout.tsx",
     "src/components/dashboard/DashboardHeader.tsx",
     "src/components/dashboard/DeleteModal.tsx",
     "src/components/dashboard/ImageUploader.tsx",

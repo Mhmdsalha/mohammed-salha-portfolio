@@ -1,4 +1,4 @@
-import { Alexandria, IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Alexandria, IBM_Plex_Mono, IBM_Plex_Sans_Arabic, JetBrains_Mono } from "next/font/google";
 
 // The three design families (docs/design/SPEC.md §1), self-hosted by next/font with metric-matched
 // fallbacks, so swapping in the real font does not shift layout (CLS).
@@ -41,3 +41,13 @@ export const plexMono = IBM_Plex_Mono({
 export const fontVariables = [alexandria.variable, plexArabic.variable, plexMono.variable].join(
   " "
 );
+
+/**
+ * The old site's and the dashboard's `font-mono` (Tailwind's --font-mono). Kept until P4-10 and
+ * the D5 tickets replace those components.
+ */
+export const legacyMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap"
+});

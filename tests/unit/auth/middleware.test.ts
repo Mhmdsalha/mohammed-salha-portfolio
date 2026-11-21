@@ -71,3 +71,42 @@ describe("middleware dashboard gate (D1-1)", () => {
     }
   });
 });
+
+describe("middleware locale routing (P3-2)", () => {
+  const location = (response: Response) =>
+    new URL(response.headers.get("location") ?? "", "http://localhost").pathname;
+
+  it('redirects "/" and unknown top-level paths under /ar with a 307', async () => {
+    for (const [path, target] of [
+      ["/", "/ar"],
+      ["/xyz", "/ar/xyz"],
+      ["/a/b", "/ar/a/b"],
+      ["/apifoo", "/ar/apifoo"],
+      ["/Dashboard", "/ar/Dashboard"]
+    ] as const) {
+      const response = await middleware(request(path));
+      expect(response.status, path).toBe(307);
+      expect(location(response), path).toBe(target);
+    }
+  });
+
+  it("never redirects locale, dashboard, dev, internal or dotted paths", async () => {
+    for (const path of ["/ar/xyz", "/en", "/dev/ui", "/_vercel/x", "/x.txt", "/cv.pdf"]) {
+      expect((await middleware(request(path))).headers.get("location"), path).toBeNull();
+    }
+  });
+
+  it("passes the URL's locale to the global 404 and overwrites a forged header", async () => {
+    for (const [path, locale] of [
+      ["/en/a/b", "en"],
+      ["/ar/xyz", "ar"],
+      ["/x.txt", "ar"]
+    ] as const) {
+      const forged = new NextRequest(`http://localhost${path}`, {
+        headers: { "x-site-locale": locale === "en" ? "ar" : "en" }
+      });
+      const response = await middleware(forged);
+      expect(response.headers.get("x-middleware-request-x-site-locale"), path).toBe(locale);
+    }
+  });
+});

@@ -64,9 +64,12 @@ for (const [label, cookie] of Object.entries(forgedCookies())) {
 
       await page.goto(path, { waitUntil: "domcontentloaded" });
       await expect(page, path).toHaveURL(/\/dashboard\/login$/);
-
       const left = (await context.cookies()).filter((c) => c.name === cookie.name);
       expect(left, `${path}: middleware should clear ${cookie.name}`).toHaveLength(0);
+
+      // The login page's sidebar prefetches /dashboard/* and the middleware answers each with
+      // "clear the cookie". Leave the page so no late prefetch deletes the next forged cookie.
+      await page.goto("about:blank");
     }
   });
 }
