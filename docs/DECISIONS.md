@@ -192,8 +192,46 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - the outline paint order.
 - **Seen in the demo, for P4:** a mixed line such as "ومطوّر Full-Stack" can wrap with the Latin word split across lines at 360px. P4-2 should wrap Latin runs in `<bdi>`/`whitespace-nowrap` or choose break points. The old unlayered `[dir="rtl"] { font-family … }` rule in `globals.css` beats Tailwind utilities on any element that carries `dir`, so P4 sections must set `font-body` on a child of the `dir` element, until P3-2 moves `dir` to `<html>` and the old rule is removed.
 
+## D-023 Build the new home page on a preview route; hero findings (P4-2) — Accepted (2026-11-21)
+
+- **Preview route, not a live swap:** the new sections are assembled on `/[locale]/preview` (noindex, unlinked), one P4 ticket at a time. The live home page keeps the old design until **P4-10** swaps the preview in, so the live site never shows a light editorial hero on top of the old dark sections. P4-10 also:
+  - deletes the old sections, components and `globals.css` block;
+  - removes `mohammed-avatar-hero.png` (moved here from P4-2's P0-3 follow-up) and the old local fonts;
+  - moves `fontVariables` to `<html>`.
+- **Hero** (`src/components/sections/home/Hero.tsx`): a server component, CSS-only motion, with copy in `home.hero` in both message files. A4's message files gained these keys under an A0 exception: the hero cannot ship without copy, and P3-1 will review them. It has:
+  - the availability line with a pulsing dot;
+  - `LineReveal` h1 (`id="hero-title"`, which labels the section), with the second line outlined;
+  - rotating role words: animated words are `aria-hidden`, and one sentence is announced instead;
+  - the lead paragraph;
+  - two CTAs. The CV button points at `/cv.pdf`, which exists once D5-5 ships;
+  - the portrait: the design's 45 KB WebP, clipped by a `rounded-full overflow-hidden` circle, `priority` + `fetchPriority="high"`, a scale-in that never starts transparent (V-1);
+  - a rotating text ring and a dashed ring.
+- **Bugs found in the browser while building:**
+  1. In an RTL page the SVG ring text starts at the end of the path and runs off it, so nothing was drawn. The text now has `direction="ltr"`; Arabic still reads right-to-left by the bidi rules.
+  2. While turning, the square ring SVGs' corners caused 10px of sideways scroll at 360px (R4). They are now clipped by a round wrapper. The test freezes them at 45°, the worst angle.
+  3. `Button` now renders a plain `<a>` for files and downloads (`/cv.pdf`); `<Link>` would try to route to them.
+- **Arabic ring:** the phrase is repeated three times to go round the circle. Letter-spacing is not used on Arabic (R3).
+- **LCP: 2.1 s, just over the 2.0 s budget.** Lighthouse 12.8.2, mobile, local production build:
+
+  | Page          | Performance | Accessibility | FCP    | LCP    | CLS | TBT   |
+  | ------------- | ----------- | ------------- | ------ | ------ | --- | ----- |
+  | `/ar/preview` | 99          | 100           | 0.97 s | 2.16 s | 0   | 59 ms |
+  | `/en/preview` | 98          | 100           | 0.92 s | 2.13 s | 0   | 70 ms |
+
+  For comparison, the live page's baseline was 65 / 62 performance and 2.9 / 3.4 s LCP. The LCP element is the ring text, not the portrait (the photo arrives in about 80 ms). The delay is the web font: 85% of LCP is render delay. Font preloading does not happen: `next-font-manifest.json` has no app entries, even for the old site's JetBrains Mono, so Next emits no preload links. `preload: true` is set for Alexandria and Plex Arabic, and the variables are applied on the new pages only, so preloads will be scoped correctly once the cause is fixed. **Follow-up (A2/A6):** find why the font manifest is empty, then re-measure. P4-10 re-measures on the final page. SEO 63 on the preview is expected, from its own `noindex`; `/favicon.ico` is a 404 site-wide (P3-3).
+
+- **Tests:** `e2e/hero.spec.ts`, 10 tests, which run against production builds too. They check:
+  - the portrait stays inside its circle at 360, 768, 1280 and 1920px in both locales;
+  - no sideways scroll, with the rings frozen at their worst angle;
+  - the accessible heading and words;
+  - the LCP-safe portrait (high priority, preloaded, opacity 1 from the start);
+  - motion is off under reduced motion and on otherwise;
+  - the CV link is a plain download link;
+  - `noindex`.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
+- Find why `next-font-manifest.json` has no app entries (no font preloads anywhere), then re-measure the hero's LCP (D-023).
 - Content-Security-Policy and security headers in `next.config.ts` (A1).
 - Slug redirects table if slugs ever change after publish (R9 alternative).

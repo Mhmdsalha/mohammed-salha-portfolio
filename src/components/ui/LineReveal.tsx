@@ -10,6 +10,8 @@ type LineRevealProps = {
   /** Delay before the first line, in ms (the hero starts at 350). */
   startMs?: number;
   stepMs?: number;
+  /** id for the element, e.g. for a section's aria-labelledby. */
+  id?: string;
   className?: string;
 };
 
@@ -24,10 +26,11 @@ export function LineReveal({
   as: Component = "h1",
   startMs = 350,
   stepMs = STAGGER.line,
+  id,
   className
 }: LineRevealProps) {
   return (
-    <Component className={clsx("font-display font-black", className)}>
+    <Component id={id} className={clsx("font-display font-black", className)}>
       {lines.map((line, i) => (
         <span key={i} className="block overflow-hidden pt-[0.08em] pb-[0.14em]">
           {i > 0 ? " " : null}
