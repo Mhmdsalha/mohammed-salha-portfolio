@@ -16,10 +16,6 @@ import {
 import { getSiteSettings } from "@/lib/site-settings";
 import { Locale } from "@/types";
 
-// New projects added in the dashboard must render without a rebuild (the locale layout sets
-// dynamicParams = false for the locale segment only).
-export const dynamicParams = true;
-
 export async function generateStaticParams() {
   const projects = await getProjects();
   return ["en", "ar"].flatMap((locale) =>

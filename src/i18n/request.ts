@@ -1,14 +1,12 @@
 import { getRequestConfig } from "next-intl/server";
-import { Locale } from "@/types";
-
-const locales: Locale[] = ["en", "ar"];
+import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/locales";
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
-  const safeLocale = locales.includes(requested as Locale) ? (requested as Locale) : "en";
+  const locale = isLocale(requested) ? requested : DEFAULT_LOCALE;
 
   return {
-    locale: safeLocale,
-    messages: (await import(`@/messages/${safeLocale}.json`)).default
+    locale,
+    messages: (await import(`@/messages/${locale}.json`)).default
   };
 });

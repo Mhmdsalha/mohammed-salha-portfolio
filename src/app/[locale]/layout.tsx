@@ -11,9 +11,9 @@ export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
 
-// Only "ar" and "en" exist: any other first segment (e.g. /xyz) is a 404 that Next renders on
-// the server from src/app/not-found.tsx, instead of this layout failing on an unknown locale.
-export const dynamicParams = false;
+// No `dynamicParams = false` here: Next applies it to every child route, so project pages would
+// stop accepting slugs added after the build (A7 review, D-026). The isLocale() check below
+// turns any other first segment (only paths with a dot reach it) into a 404.
 
 export async function generateMetadata({
   params
@@ -28,8 +28,9 @@ export async function generateMetadata({
 }
 
 /**
- * Root layout for the public site (there is no app/layout.tsx; dashboard and dev have their own): <html lang dir> comes from the locale (P3-2), so /ar is
- * Arabic right-to-left from the first byte. No NextIntlClientProvider: every translation is
+ * Root layout for the public site (there is no app/layout.tsx; dashboard, dev and the global 404
+ * have their own): <html lang dir> comes from the locale (P3-2), so /ar is Arabic right-to-left
+ * from the first byte. No NextIntlClientProvider: every translation is
  * resolved on the server, so the messages are not shipped to the browser (D-023, D-026).
  * Client components that need copy receive it as props.
  */

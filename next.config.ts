@@ -3,6 +3,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   experimental: {
+    // src/app/global-not-found.tsx: unmatched URLs get a server-rendered localised 404 (D-026).
+    globalNotFound: true,
     serverActions: {
       bodySizeLimit: "8mb"
     }

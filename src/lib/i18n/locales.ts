@@ -4,6 +4,9 @@ export const LOCALES = ["ar", "en"] as const;
 export type AppLocale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: AppLocale = "ar";
 
+/** Request header the middleware sets to the URL's locale; read by the global 404. */
+export const LOCALE_HEADER = "x-site-locale";
+
 export function isLocale(value: string | undefined): value is AppLocale {
   return LOCALES.includes(value as AppLocale);
 }
@@ -18,7 +21,7 @@ export function otherLocale(locale: AppLocale): AppLocale {
 
 /**
  * The same page in another locale: swaps the first path segment when it is a locale, otherwise
- * prefixes one. Query and hash are kept. Examples: "/ar/projects/x?y#z" -> "/en/projects/x?y#z";
+ * prefixes one. Query and hash in `href` are kept (a usePathname() value has neither). Examples: "/ar/projects/x?y#z" -> "/en/projects/x?y#z";
  * "/" -> "/en".
  */
 export function switchLocalePath(href: string, target: AppLocale): string {

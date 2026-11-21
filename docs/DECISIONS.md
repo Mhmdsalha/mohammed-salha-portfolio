@@ -287,18 +287,29 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - `src/app/dashboard/layout.tsx` (English, ltr; A5's file, changed under an A0 exception so it can own `<html>`);
   - `src/app/dev/layout.tsx` (English, ltr, development only).
 
-  Each imports `globals.css` itself. A pass-through `app/layout.tsx` (next-intl's other pattern) made every 404 fall back to Next's bare error shell, so it was dropped. JetBrains Mono, the old site's and the dashboard's `font-mono`, moved into `src/app/fonts.ts` as `legacyMono`.
+  Each imports `globals.css` itself. JetBrains Mono, the old site's and the dashboard's `font-mono`, moved into `src/app/fonts.ts` as `legacyMono`. `<SpeedInsights/>` is mounted in the locale layout only: the private dashboard needs no field data.
 
 - **Routing** (`src/middleware.ts`, `src/lib/i18n/locales.ts`):
   - `/` redirects to `/ar` with a 307, temporary so a language-based choice can come later.
-  - Any other top-level path outside `/ar`, `/en`, `/dashboard` and `/dev` (e.g. `/xyz`) moves to `/ar/xyz`, as next-intl does.
-  - `/[locale]` accepts only `ar` and `en` (`dynamicParams = false`); project pages keep accepting new slugs.
-  - `[locale]/[...rest]` turns any unmatched page into a 404.
-- **404s:** `src/app/[locale]/not-found.tsx` shows the localised message from `site.errors`, with HTTP 404 and the right `lang`/`dir`. **Known limit:** Next 15.5 sends its generic error shell as the first HTML of a 404 (also to crawlers) and renders the localised page on the client. Visitors see the right page, and a 404 needs no indexing. P4-9 looks at server-rendering it with the designed error pages.
-- **Language switch keeps the page:** `switchLocalePath()` swaps the first segment, keeping query and hash (`/ar/projects/x` → `/en/projects/x`), and is unit-tested. The old header's switcher uses it now (client component, `hrefLang`); the new header (P4-1) uses the same helper.
+  - Any other top-level path outside `/ar`, `/en`, `/dashboard` and `/dev` (e.g. `/xyz`, `/apifoo`) moves to `/ar/xyz`, as next-intl does. Paths with a dot, `_`-prefixed paths and `/api/…` are left alone (static files, Next internals).
+  - `/[locale]` takes only `ar` and `en` through the layout's `isLocale()` check. **No `dynamicParams = false`** (A7 review): Next 15.5 applies it to every child route and ignores a child's `dynamicParams = true` (`build/static-paths/app.js`: `segments.every(…dynamicParams !== false)`), so project pages would 404 for slugs added after the build once they are cached (D1-4, R7). Reproduced on a static build.
+- **404s:**
+  - **Unmatched URLs** (`/ar/xyz`, `/en/a/b`) render `src/app/global-not-found.tsx` on the server (`experimental.globalNotFound`): HTTP 404, `<html lang dir>`, the localised `site.errors` message and title, `noindex`, from the first byte. The middleware passes the URL's locale in the `x-site-locale` request header, always overwriting a visitor's own value. Trade-off: an experimental flag, and `/_not-found` is dynamic.
+  - **`notFound()` thrown from a page or layout** (an unknown project slug; a dotted first segment such as `/cv.pdf` or `/x.txt` failing the layout's locale check) renders `src/app/[locale]/not-found.tsx`. **Known limit:** for a thrown `notFound()` Next 15.5 sends its error shell as the first HTML and renders the page on the client (React's server renderer has no error boundary, `app-render.js`). Visitors see the localised page (dotted paths get Next's plain English one), HTTP is 404, and a 404 needs no indexing. P4-9 revisits it with the designed error pages; P3-3 adds the real `robots.txt`, `sitemap.xml` and icon routes, and D5-5 the CV file.
+  - The first version used a pass-through `app/layout.tsx` and then a `[locale]/[...rest]` catch-all; both put every unmatched URL through the error shell, a regression from `main` (A7 review).
+- **Language switch keeps the page:** `switchLocalePath()` swaps the first segment, keeping any query and hash in its input (`/ar/projects/x` → `/en/projects/x`), and is unit-tested. The old header's switcher uses it now (client component, `hrefLang`) with `usePathname()`, which has no query or hash, so those are dropped there; the new header (P4-1) uses the same helper.
 - **No `NextIntlClientProvider`:** every translation resolves on the server, so the message JSON is no longer embedded in every page. Client components that need copy get it as props (D-023 lever).
 - **Metadata:** the title and description now come from `site.meta` per locale, so the site no longer advertises Salla (P0-3 / P3-3 follow-up). Open Graph, hreflang, the sitemap and robots stay in P3-3. The dashboard is `noindex`.
-- **Tests:** `tests/unit/locales.test.ts` and `e2e/locale.spec.ts` (`<html lang dir>` on 5 routes, `/` and `/xyz` redirects, localised 404s with status 404, the switch keeping the page). Hero and security suites still pass.
+- **Tests:**
+  - `tests/unit/locales.test.ts`.
+  - `tests/unit/auth/middleware.test.ts` covers the redirects, the paths left alone, and the locale header including a forged one.
+  - `e2e/locale.spec.ts` checks:
+    - `<html lang dir>` on 5 routes;
+    - the `/` and `/xyz` redirects;
+    - the raw server HTML of unmatched-URL 404s;
+    - what visitors see on every kind of 404;
+    - the switch: it fails rather than skips without a project link, and it clicks through.
+  - Hero and security suites pass. The forged-cookie test now leaves the login page before setting each cookie, because the sidebar's prefetches were deleting it mid-test (1 in 50 runs failed; 75/75 after the fix).
 
 ## Backlog (not in scope until A0 schedules it)
 

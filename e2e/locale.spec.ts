@@ -34,9 +34,25 @@ test("an unknown top-level path moves under /ar", async ({ request }) => {
   );
 });
 
-test("an unknown page is a localised 404 with status 404", async ({ page }) => {
-  // Next 15 sends its generic error shell as the first HTML of a 404 and renders the not-found
-  // page on the client (D-026), so this checks what the visitor actually sees.
+test("an unmatched URL is a localised 404 rendered on the server", async ({ request }) => {
+  // src/app/global-not-found.tsx: the first HTML already carries the language (D-026).
+  for (const [path, lang, dir, title] of [
+    ["/ar/definitely-not-a-page", "ar", "rtl", "الصفحة غير موجودة"],
+    ["/en/definitely-not-a-page", "en", "ltr", "Page not found"],
+    ["/en/a/b/c", "en", "ltr", "Page not found"]
+  ] as const) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(404);
+    const html = await response.text();
+    expect(htmlAttrs(html), path).toEqual({ lang, dir });
+    expect(html, path).toContain(`<h1 class="font-display text-3xl font-black">${title}</h1>`);
+    expect(html, path).toContain(`<title>${title}</title>`);
+  }
+});
+
+test("every 404 shows the localised page to the visitor", async ({ page }) => {
+  // An unknown project slug throws notFound() from the page: Next 15.5 sends its error shell
+  // first and renders the localised page on the client (D-026), so this checks what is seen.
   for (const [path, lang, dir, title] of [
     ["/ar/definitely-not-a-page", "ar", "rtl", "الصفحة غير موجودة"],
     ["/en/definitely-not-a-page", "en", "ltr", "Page not found"],
@@ -53,10 +69,15 @@ test("an unknown page is a localised 404 with status 404", async ({ page }) => {
 test("the language switch keeps the current page", async ({ page }) => {
   await page.goto("/ar", { waitUntil: "domcontentloaded" });
   const projectLink = page.locator('a[href^="/ar/projects/"]').first();
+  // The home page always links its projects; no link means the test cannot prove anything.
   const href = await projectLink.getAttribute("href");
-  test.skip(!href, "no project page linked from /ar");
+  expect(href, "a project link on /ar").toBeTruthy();
 
   await page.goto(href!, { waitUntil: "domcontentloaded" });
+  const target = href!.replace(/^\/ar/, "/en");
   const switcher = page.locator('a[hreflang="en"]').first();
-  await expect(switcher).toHaveAttribute("href", href!.replace(/^\/ar/, "/en"));
+  await expect(switcher).toHaveAttribute("href", target);
+  await switcher.click();
+  await expect(page).toHaveURL(new RegExp(`${target}$`));
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
