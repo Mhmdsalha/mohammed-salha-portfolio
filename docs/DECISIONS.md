@@ -168,6 +168,29 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 - **Layout ownership:** `src/app/layout.tsx` (A4, D-010) only gains the font-variable class on `<html>`; P3-2 restructures it.
 - **Tailwind sources:** `globals.css` excludes `tests/`, `e2e/`, `scripts/` and `docs/` with `@source not`, so class names in test strings and docs never add utilities to the production CSS.
 
+## D-022 Design primitives and motion (P2-2) — Accepted (2026-11-21)
+
+- **Primitives** in `src/components/ui/`, all server components and CSS-only (D-013), so they add no client JavaScript:
+  - `Button`: accent / ink / ghost, sizes sm 44px, md 48px, lg 54px (all ≥ 44px touch targets); renders a Next `<Link>` when `href` is set; optional `arrow` or `download` icon.
+  - `Tag`: accent / outline / chip pills with `dir="auto"` (R15).
+  - `SectionHeader`: numbered eyebrow, heading with optional outlined words, aside slot, light/dark tone.
+  - `Reveal`: scroll reveal through `animation-timeline: view()`, visible without support.
+  - `LineReveal`: hero-style lines rising out of a clip with 0.08em/0.14em padding for Arabic (R3) and a space between lines for screen readers.
+  - `Marquee`: always LTR, two copies for a seamless loop (the second hidden from assistive tech), pauses on hover and focus, `overflow-hidden` (R4).
+- **Motion tokens** in `globals.css`: `animate-line-rise`, `animate-fade-up`, `animate-rule-draw`, `animate-marquee`, plus the `reveal-on-scroll`, `text-outline` and `text-outline-light` utilities. `src/lib/motion.ts` holds the matching durations (carousel 6.5 s, word cycle 10 s, marquee 30 s, clock 30 s), staggers and easing names; it is server-safe. The reduced-motion hook for JavaScript timers is in `src/lib/use-reduced-motion.ts` (client only). Next refuses a server import of any module that contains a hook, so the two must stay split. On the server the hook returns "reduce", so nothing autoplays before hydration.
+- **Reduced motion (R13):** every primitive turns its motion off with `motion-reduce:` utilities. The existing global rule in `globals.css` also cuts every animation and transition to near zero.
+- **RTL/LTR (R2, R21):** the arrow icon is drawn pointing to the line end in LTR and mirrored with `rtl:-scale-x-100`. Its hover nudge uses explicit `ltr:` / `rtl:` variants: moving 4px toward the reading direction, checked in a browser in both directions. Every animation is vertical or LTR-only (marquee), so nothing needs mirroring.
+- **Outlined text and Arabic seams (R20 confirmed):** a plain `-webkit-text-stroke` draws visible seams where connected Arabic letters overlap (seen in Alexandria at 900). The `text-outline` utilities paint the stroke first and then fill the letters with the background colour (`paint-order: stroke fill`, stroke doubled to 3px because the fill covers its inner half). This hides the inner overlaps. Fallbacks: a 1.5px stroke without `paint-order`, and solid text in forced-colours mode or without text-stroke support. **Consequence:** outlined text must sit on the colour given as `--outline-fill` (paper by default, ink for `text-outline-light`).
+- **Demo page** `/dev/ui`: every primitive in RTL and LTR. It returns 404 in production (checked on a production build), and `robots: noindex`.
+- **Tests:** 16 render tests (`tests/unit/ui-primitives.test.tsx`) and 6 browser tests (`e2e/ui-primitives.spec.ts`, against `next dev`; they skip where `/dev/ui` is a 404). The browser tests check:
+  - motion on and off with reduced motion;
+  - arrow mirroring and hover direction;
+  - marquee pause;
+  - no horizontal scroll at 360px;
+  - the Alexandria font loading;
+  - the outline paint order.
+- **Seen in the demo, for P4:** a mixed line such as "ومطوّر Full-Stack" can wrap with the Latin word split across lines at 360px. P4-2 should wrap Latin runs in `<bdi>`/`whitespace-nowrap` or choose break points. The old unlayered `[dir="rtl"] { font-family … }` rule in `globals.css` beats Tailwind utilities on any element that carries `dir`, so P4 sections must set `font-body` on a child of the `dir` element, until P3-2 moves `dir` to `<html>` and the old rule is removed.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
