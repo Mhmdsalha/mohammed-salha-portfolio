@@ -231,7 +231,7 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   | `/ar/preview` | 114 KB (8 files) | 16 KB | 158 KB (6 files) | 31 KB  |
   | `/en/preview` | 114 KB (8 files) | 16 KB | 59 KB (3 files)  | 31 KB  |
 
-  The JavaScript is mostly the React and Next.js runtime (54 + 46 KB), which every page carries. The gap between the locales is fonts. **What moves the number:** less JavaScript and fewer font bytes before the first paint, not the ring's font. Concretely, P3-2 drops the old `[locale]` layout's client provider (`NextIntlClientProvider` with every message) and old `Background`, and P4-10 removes the old CSS and components. Fewer font files on `/ar` means, for example, not loading Alexandria's Latin subset only for "Full-Stack", or using one family on the first screen. **Budget question for the owner:** whether "LCP < 2.0 s" means Lighthouse's simulated mobile number (hard to reach with any Next.js App Router page, given its ~100 KB runtime) or field data from real visitors (Vercel Speed Insights). P4-10 measures both.
+  The JavaScript is mostly the React and Next.js runtime (54 + 46 KB), which every page carries. The gap between the locales is fonts. **What moves the number:** less JavaScript and fewer font bytes before the first paint, not the ring's font. Concretely, P3-2 drops the old `[locale]` layout's client provider (`NextIntlClientProvider` with every message) and old `Background`, and P4-10 removes the old CSS and components. Fewer font files on `/ar` means, for example, not loading Alexandria's Latin subset only for "Full-Stack", or using one family on the first screen. **Budget decided in D-024:** real-visitor data (Vercel Speed Insights, mobile p75).
 
 - **Local measuring pitfall:** `next dev` and `next start` share `.next`. Starting a dev server while a production server runs overwrites the built CSS, and pages then render in Times New Roman. One measurement was discarded for this reason. Never run both from the same checkout at once.
 - **Tests:** `e2e/hero.spec.ts`, 10 tests, which run against production builds too. They check:
@@ -242,6 +242,14 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - motion is off under reduced motion and on otherwise;
   - the CV link is a plain download link;
   - `noindex`.
+
+## D-024 LCP budget is measured on real visitors — Accepted (owner, 2026-11-21)
+
+- **Decision:** the plan's "LCP < 2.0 s" means real visitors on mobile: the **75th percentile in Vercel Speed Insights**. Lighthouse's simulated mobile LCP does not count. D-023 shows why: in a real browser the hero's first paint and LCP coincide (about 0.55 s locally), but the simulation counts every request made before that paint, including the ~100 KB Next.js runtime that every page carries.
+- **What stays in Lighthouse:** performance, accessibility, best-practices and SEO scores, CLS and the JavaScript budget (QA gate 4) are still checked with Lighthouse CI. Its LCP figure is reported for information and used to spot regressions, not as the pass mark.
+- **Implementation:** `@vercel/speed-insights` is mounted in the root layout. The owner enables Speed Insights in the Vercel project (Speed Insights tab → Enable); until then the script loads but nothing is recorded. It sets no cookies and collects only anonymous performance metrics.
+- **When it is checked:** field data needs real traffic on the real page, so the budget is checked after P4-10 makes the new design the live home page, and again at launch (L-2). P4-2's LCP criterion moves there; P4-2 is done.
+- The levers in D-023 still apply, because simulated and real LCP both improve with less JavaScript and fewer font bytes before the first paint: P3-2 and P4-10 cleanup, and fewer first-screen font files on `/ar`.
 
 ## Backlog (not in scope until A0 schedules it)
 

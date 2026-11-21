@@ -209,7 +209,7 @@ A PR merges only when all five gates pass; A6 automates gates 1–4 in CI and A7
 1. **Static:** lint, typecheck, `next build` with zero warnings; no `any`, no `// @ts-ignore`, no `console.log`.
 2. **Tests:** Vitest for utilities, schemas and the carousel timer; Playwright e2e for the critical paths below; coverage of `src/lib` and `src/actions` at 80% or more.
 3. **Visual:** Playwright screenshots of `/ar` and `/en` at 360, 768, 1280 and 1920 px; any diff over 0.1% needs A7's approval.
-4. **Quality budgets:** Lighthouse CI on the Vercel preview (mobile): Performance 95, Accessibility 100, Best Practices 100, SEO 100; LCP under 2.0 s, CLS under 0.05, total JS under 180 KB gzipped on `/ar`; axe-core zero serious or critical issues.
+4. **Quality budgets:** Lighthouse CI on the Vercel preview (mobile): Performance 95, Accessibility 100, Best Practices 100, SEO 100; CLS under 0.05, total JS under 180 KB gzipped on `/ar`; axe-core zero serious or critical issues. **LCP under 2.0 s is judged on real visitors (Vercel Speed Insights, mobile p75), not on Lighthouse's simulated LCP (D-024).**
 5. **Independent review (A7):** reads the diff cold, runs the preview, and checks the list below.
 
 ### Critical e2e paths

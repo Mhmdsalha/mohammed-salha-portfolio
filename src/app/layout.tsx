@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const jetbrains = JetBrains_Mono({
@@ -21,7 +22,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={jetbrains.variable}>{children}</body>
+      <body className={jetbrains.variable}>
+        {children}
+        {/* Real-visitor Core Web Vitals: the LCP budget is judged on this field data (D-024). */}
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
