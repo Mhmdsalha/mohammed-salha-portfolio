@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/*
+ * Direction variants use the element's real directionality (:dir), so an LTR block nested in an
+ * RTL page (or the reverse) gets the right one. Tailwind's default matches any [dir="rtl"]
+ * ancestor, which makes both rtl: and ltr: apply inside a nested block (A7 review of P2-2).
+ */
+@custom-variant rtl (&:dir(rtl));
+@custom-variant ltr (&:dir(ltr));
+
 /* Only scan app code for class names: test strings and docs must not add utilities to the build. */
 @source not "../../tests";
 @source not "../../e2e";

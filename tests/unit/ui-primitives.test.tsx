@@ -25,18 +25,28 @@ describe("Button", () => {
     expect(html(<Button size="lg">x</Button>)).toContain("min-h-[54px]");
   });
 
-  it("turns hover motion off under reduced motion", () => {
+  it("declares hover movement only when motion is allowed (behaviour is checked in e2e)", () => {
     const markup = html(<Button icon="arrow">x</Button>);
-    expect(markup).toContain("motion-reduce:transition-none");
-    expect(markup).toContain("motion-reduce:hover:translate-y-0");
-  });
-
-  it("mirrors the arrow in RTL and nudges it toward the reading direction", () => {
-    const markup = html(<Button icon="arrow">x</Button>);
+    expect(markup).toContain("motion-safe:hover:-translate-y-[3px]");
+    expect(markup).not.toMatch(/(?<!motion-safe:)hover:-translate-y/);
     expect(markup).toContain('aria-hidden="true"');
     expect(markup).toContain("rtl:-scale-x-100");
-    expect(markup).toContain("ltr:group-hover:translate-x-1");
-    expect(markup).toContain("rtl:group-hover:-translate-x-1");
+    expect(markup).toContain("motion-safe:ltr:group-hover:translate-x-1");
+    expect(markup).toContain("motion-safe:rtl:group-hover:-translate-x-1");
+    expect(markup).not.toMatch(/(?<!motion-safe:)(?:ltr|rtl):group-hover:/);
+  });
+
+  it("uses the design's paddings and border widths", () => {
+    expect(html(<Button variant="ghost">x</Button>)).toContain("px-[26px]");
+    expect(html(<Button variant="ghost">x</Button>)).toContain("border-[1.5px]");
+    expect(
+      html(
+        <Button variant="ghost" size="sm">
+          x
+        </Button>
+      )
+    ).toMatch(/px-3\.5[^"]* border(?![-\w])/);
+    expect(html(<Button>x</Button>)).toContain("px-7");
   });
 
   it("puts the download icon before the label and the arrow after it", () => {
@@ -108,20 +118,26 @@ describe("Reveal", () => {
 });
 
 describe("Marquee", () => {
-  const markup = html(<Marquee items={["Next.js", "React"]} label="Stack" />);
+  const markup = html(<Marquee items={["Next.js", "React"]} label="Stack" pauseLabel="Pause" />);
 
-  it("is always left-to-right and pauses on hover, focus and reduced motion", () => {
+  it("is always left-to-right and has a pausing hook for hover, focus and the control", () => {
     expect(markup).toMatch(/^<div dir="ltr"/);
     expect(markup).toContain("group-hover:[animation-play-state:paused]");
-    expect(markup).toContain("group-focus-within:[animation-play-state:paused]");
+    expect(markup).toContain("group-has-[input:checked]:[animation-play-state:paused]");
     expect(markup).toContain("motion-reduce:animate-none");
   });
 
-  it("exposes one labelled list and hides the duplicate and the separators", () => {
+  it("exposes the items once to screen readers, with a labelled pause checkbox", () => {
     expect(markup.match(/<ul/g)).toHaveLength(2);
     expect(markup).toContain('aria-label="Stack"');
     expect(markup.match(/<ul[^>]*aria-hidden="true"/g)).toHaveLength(1);
-    expect(markup.match(/<li aria-hidden="true"[^>]*>✦<\/li>/g)).toHaveLength(4);
+    // First copy: the first run is readable, its repeat is hidden.
+    const firstCopy = markup.slice(markup.indexOf('aria-label="Stack"'), markup.indexOf("</ul>"));
+    expect(firstCopy.match(/<li>[^<]+<\/li>/g)).toEqual(["<li>Next.js</li>", "<li>React</li>"]);
+    expect(firstCopy.match(/<li aria-hidden="true">(Next\.js|React)<\/li>/g)).toHaveLength(2);
+    expect(markup).toMatch(
+      /<label[\s\S]*<input type="checkbox"[\s\S]*<span class="sr-only">Pause<\/span>/
+    );
   });
 });
 

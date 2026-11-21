@@ -27,18 +27,29 @@ type NativeButtonProps = CommonProps & { href?: undefined } & Omit<
 
 export type ButtonProps = LinkProps | NativeButtonProps;
 
+// Movement is declared only under `motion-safe:`, so with reduced motion it does not exist at all
+// (a motion-reduce: override can lose to a later direction rule; A7 review of P2-2).
 const VARIANTS: Record<Variant, string> = {
-  // Filled buttons lift on hover (SPEC §2 `.btn`).
-  accent: "bg-accent text-on-accent hover:-translate-y-[3px] hover:shadow-lift",
-  ink: "bg-ink text-paper hover:-translate-y-[3px] hover:shadow-lift",
-  // Outlined buttons fill on hover (SPEC §2 `.ghost`).
-  ghost: "border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper"
+  // Filled buttons lift and cast a shadow on hover (SPEC §2 `.btn`: .3s reveal easing).
+  accent:
+    "bg-accent text-on-accent hover:shadow-lift motion-safe:hover:-translate-y-[3px] motion-safe:transition-[translate,box-shadow] motion-safe:duration-300 motion-safe:ease-reveal",
+  ink: "bg-ink text-paper hover:shadow-lift motion-safe:hover:-translate-y-[3px] motion-safe:transition-[translate,box-shadow] motion-safe:duration-300 motion-safe:ease-reveal",
+  // Outlined buttons fill on hover (SPEC §2 `.ghost`: background and colour, .3s, default ease).
+  ghost:
+    "border-ink text-ink hover:bg-ink hover:text-paper motion-safe:transition-[background-color,color] motion-safe:duration-300 motion-safe:ease-[ease]"
+};
+
+// Paddings from Main.dc.html. Ghost buttons are 2px narrower to allow for their border.
+const PADDING: Record<Variant, Record<Size, string>> = {
+  accent: { sm: "px-[18px]", md: "px-[22px]", lg: "px-7" },
+  ink: { sm: "px-[18px]", md: "px-[22px]", lg: "px-7" },
+  ghost: { sm: "px-3.5", md: "px-[22px]", lg: "px-[26px]" }
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "min-h-11 gap-2 px-[18px] text-sm",
-  md: "min-h-12 gap-2 px-[22px] text-[15px]",
-  lg: "min-h-[54px] gap-2.5 px-7 text-base"
+  sm: "min-h-11 gap-2 text-sm",
+  md: "min-h-12 gap-2 text-[15px]",
+  lg: "min-h-[54px] gap-2.5 text-base"
 };
 
 const ICON_SIZES: Record<Size, string> = { sm: "size-4", md: "size-4", lg: "size-[18px]" };
@@ -49,11 +60,12 @@ export function Button(props: ButtonProps) {
 
   const classes = clsx(
     "group inline-flex items-center justify-center rounded-full font-body font-semibold whitespace-nowrap",
-    "transition-[translate,box-shadow,background-color,color] duration-300 ease-reveal",
     "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
-    "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
     VARIANTS[variant],
+    PADDING[variant][size],
     SIZES[size],
+    // The small ghost pill (header language switch) has a 1px border; the others 1.5px.
+    variant === "ghost" && (size === "sm" ? "border" : "border-[1.5px]"),
     className
   );
 
@@ -62,9 +74,9 @@ export function Button(props: ButtonProps) {
       <ArrowIcon
         className={clsx(
           ICON_SIZES[size],
-          "transition-[translate] duration-[400ms] ease-reveal motion-reduce:transition-none",
-          "ltr:group-hover:translate-x-1 rtl:group-hover:-translate-x-1",
-          "motion-reduce:group-hover:translate-x-0"
+          // Nudge 4px toward the line end: left in RTL, right in LTR (SPEC §2 `.bi`).
+          "motion-safe:transition-[translate] motion-safe:duration-[400ms] motion-safe:ease-reveal",
+          "motion-safe:ltr:group-hover:translate-x-1 motion-safe:rtl:group-hover:-translate-x-1"
         )}
       />
     ) : icon === "download" ? (

@@ -10,12 +10,17 @@ const VARIANTS: Record<Variant, string> = {
   // Kind pill and archive tag.
   outline: "border border-ink text-ink",
   // Stack chip: fills on hover (SPEC §2 `.chip`).
-  chip: "border border-ink text-ink transition-colors duration-300 hover:bg-ink hover:text-paper motion-reduce:transition-none"
+  chip: "border border-ink text-ink hover:bg-ink hover:text-paper motion-safe:transition-colors motion-safe:duration-300 motion-safe:ease-[ease]"
 };
 
-const SIZES: Record<Size, string> = {
-  sm: "px-3 py-1 text-xs",
-  md: "px-3.5 py-1.5 text-[13px]"
+// Paddings from Main.dc.html: bordered pills are 1px shorter so all md pills share one height.
+const SIZES: Record<Size, Record<Variant, string>> = {
+  sm: { accent: "px-3 py-1 text-xs", outline: "px-3 py-1 text-xs", chip: "px-3 py-1 text-xs" },
+  md: {
+    accent: "px-3.5 py-1.5 text-[13px]",
+    outline: "px-3.5 py-[5px] text-[13px]",
+    chip: "px-[11px] py-[5px] text-[13px]"
+  }
 };
 
 type TagProps = {
@@ -36,7 +41,7 @@ export function Tag({ variant = "outline", size = "md", children, className }: T
       className={clsx(
         "inline-flex items-center rounded-full font-body font-semibold leading-normal whitespace-nowrap",
         VARIANTS[variant],
-        SIZES[size],
+        SIZES[size][variant],
         className
       )}
     >

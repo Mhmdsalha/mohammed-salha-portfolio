@@ -10,7 +10,12 @@ import { Tag } from "@/components/ui/Tag";
 // P2-2 demo of the design primitives, in RTL and LTR. Development only: production returns 404.
 // Sample copy is hard-coded on purpose; real copy comes from the message files (P3-1).
 
-export const metadata: Metadata = { title: "UI primitives", robots: { index: false } };
+export function generateMetadata(): Metadata {
+  // Production serves a plain 404 here, without the demo's title.
+  return process.env.NODE_ENV === "production"
+    ? {}
+    : { title: "UI primitives", robots: { index: false } };
+}
 
 const STACK = [
   "Next.js",
@@ -40,7 +45,9 @@ const COPY = {
     outlined: "الرئيسية",
     aside: "كل أداة هنا مرتبطة بمشروع حقيقي.",
     revealText: "يظهر هذا المربع عند التمرير إليه، أو مباشرة إذا كانت الحركة مقللة.",
-    stack: "التقنيات"
+    stack: "التقنيات",
+    pause: "إيقاف الحركة",
+    nested: "زر داخل كتلة إنجليزية ضمن صفحة عربية:"
   },
   en: {
     dir: "ltr" as const,
@@ -59,7 +66,9 @@ const COPY = {
     outlined: "projects",
     aside: "Every tool here is tied to a real project.",
     revealText: "This box rises in as you scroll to it, or simply appears with reduced motion.",
-    stack: "Stack"
+    stack: "Stack",
+    pause: "Pause animation",
+    nested: "Button inside an Arabic block within an English page:"
   }
 };
 
@@ -111,12 +120,22 @@ function Demo({ locale }: { locale: keyof typeof COPY }) {
           aside={<p className="max-w-[380px] text-ink-2">{t.aside}</p>}
         />
 
+        {/* Nested opposite direction: the arrow must follow the inner block, not the page. */}
+        <div data-demo-part="nested" className="space-y-3">
+          <p className="text-ink-4">{t.nested}</p>
+          <div dir={t.dir === "rtl" ? "ltr" : "rtl"} lang={t.dir === "rtl" ? "en" : "ar"}>
+            <Button href="#" variant="ink" size="md" icon="arrow" className="font-body">
+              {t.dir === "rtl" ? "Case study" : "دراسة الحالة"}
+            </Button>
+          </div>
+        </div>
+
         <Reveal className="rounded-frame border border-line bg-paper-raised p-6">
           <p className="text-lead text-ink-2">{t.revealText}</p>
         </Reveal>
       </div>
 
-      <Marquee items={STACK} label={t.stack} />
+      <Marquee items={STACK} label={t.stack} pauseLabel={t.pause} />
     </section>
   );
 }
