@@ -251,6 +251,35 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 - **When it is checked:** field data needs real traffic on the real page, so the budget is checked after P4-10 makes the new design the live home page, and again at launch (L-2). P4-2's LCP criterion moves there; P4-2 is done.
 - The levers in D-023 still apply, because simulated and real LCP both improve with less JavaScript and fewer font bytes before the first paint: P3-2 and P4-10 cleanup, and fewer first-screen font files on `/ar`.
 
+## D-025 Message files and the no-hard-coded-copy rule (P3-1) — Accepted (2026-11-21, revised after A7 review)
+
+- **Structure:** `site.*` holds what every page shares: `meta`, `nav`, `footer`, `errors`. `home.*` holds one key per section: `hero`, `spec`, `marquee`, `featured`, `archive`, `skills`, `education`, `contact`, the shared `projectLabels` / `projectLabelsShort` / `projectKinds` / `projectKindsShort`, and `project` for the case-study page. Project and skill text (names, descriptions, highlights) lives in the database in AR/EN columns (D1-2), not here. Contact values (email, phone, links) are dashboard settings, not copy (D-014).
+- **Old keys removed:** `nav`, `hero`, `about`, `projects`, `services`, `contact` and `footer` were not read anywhere (the old components hard-code their copy), and they held Salla text. The old live pages are unchanged; their copy goes when P4-10 deletes them.
+- **Copy sources:** the CV for facts; the design for tone and the Arabic phrasing (D-014). The owner's answers are in CONTENT.md (C-2, C-3, C-7). The education rows follow the design (4 rows; the graduation project is "منصة لإدارة المشاريع بتحديثات لحظية"). Adding the CV's years (C-9) is still the owner's call.
+- **Notes for P4:**
+  - `home.archive.countLabel` is the accessible label; the visible count stays the design's "(06)".
+  - The archive tag is `projectLabelsShort` for training and graduation projects, and `projectKindsShort` otherwise. This gives the design's "تدريبي", "تخرج", "ويب" and "متجر".
+  - `home.skills.total` is the text after the large number. It is pluralised on `count` and `areas`, both from the database.
+  - The design's "مرّر على أي بطاقة لترى أين" (hover to see where) is dropped from the skills intro, because hover does not exist on touch and the "used in" line is always visible.
+- **Checked by machine:**
+  - **Typed keys:** `src/global.d.ts` types next-intl against `en.json`, so a missing or misspelt key fails `npm run typecheck`. This covers `getTranslations`/`useTranslations`, with or without a namespace, `t.rich`/`t.raw`/`t.has` and template-literal keys. next-intl 3 does **not** type the values passed in (a missing `{current}` compiles); the message test's formatting check partly covers that.
+  - **No arrays in message files:** next-intl stops checking key names in any namespace that contains an array, so lists use numbered keys (`words.1`…). A test enforces this.
+  - **`tests/unit/messages.test.ts`:** parses every message with the ICU parser. It checks:
+    - AR and EN have the same keys and no empty values;
+    - every message is valid ICU;
+    - both languages use the same arguments and rich-text tags (`<latin>`, `<mark>`);
+    - every Arabic plural has all six forms (zero, one, two, few, many, other);
+    - each message formats for 0, 1, 2, 3, 11 and 100 with no braces left over;
+    - no Arabic value equals the English one, except listed names and technologies;
+    - no Salla copy.
+
+    The review's breaks (an unclosed plural, a dropped `<mark>`, a missing zero form) all fail it, and a valid English plural passes.
+
+  - **Lint, for the whole of `src/components/ui`, `src/components/site`, `src/components/sections/home` and `src/app/[locale]`:** the old-site files are listed in `ignores` until P4-10.
+    - `react/jsx-no-literals` blocks text children; symbols such as ✦, — and · are allowed.
+    - `no-restricted-syntax` blocks literal `aria-label`, `aria-description`, `alt`, `title` and `placeholder` values, and text picked by `cond ? "…" : "…"` or `cond && "…"`.
+- **Acceptance "/ar and /en show zero untranslated strings":** this holds for the new site on `/[locale]/preview`, the only place the new copy is used. The live `/ar` and `/en` stay the old site until P4-10, which repeats the check on the final pages.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
