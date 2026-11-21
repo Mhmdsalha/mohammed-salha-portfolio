@@ -116,7 +116,14 @@ export async function Hero({ locale }: { locale: Locale }) {
               {/* LTR base direction anchors the text at the path start; in an RTL page it would start at
                   the path end and run off it. Arabic words still read right-to-left (bidi). */}
               <text direction="ltr" className="fill-ink font-body text-[7.6px] font-semibold">
-                <textPath href={`#hero-ring-${locale}`}>{t("ring")}</textPath>
+                {/* Latin fills the circle by stretching letter-spacing; Arabic must not be spaced
+                    out (it breaks the joins, R3), so it repeats the phrase instead. */}
+                <textPath
+                  href={`#hero-ring-${locale}`}
+                  {...(locale === "en" ? { textLength: 560, lengthAdjust: "spacing" } : {})}
+                >
+                  {t("ring")}
+                </textPath>
               </text>
             </svg>
             <svg

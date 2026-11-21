@@ -82,4 +82,4 @@ These settle part of the conflicts below: C-1 (the Saree3 UI is React, as the de
 
 ## Message-file structure (for P3-1)
 
-`nav`, `hero` (availability, title lines, rotating words, lead, CTAs, portrait alt, ring text), `spec` (4 cells), `marquee`, `featured` (heading, counter label, prev/next labels, case-study and live buttons), `archive`, `skills` (heading, intro, total label, category names), `education` (rows, closing statement), `contact`, `footer`, `meta` (title, description per locale), `common` (CV download, language switch). Project and skill text lives in the database (AR/EN columns), not in message files.
+`nav`, `home.hero` (already added by P4-2: availability, title lines, rotating words, lead, CTAs, portrait alt, ring text), `spec` (4 cells), `marquee`, `featured` (heading, counter label, prev/next labels, case-study and live buttons), `archive`, `skills` (heading, intro, total label, category names), `education` (rows, closing statement), `contact`, `footer`, `meta` (title, description per locale), `common` (CV download, language switch). Project and skill text lives in the database (AR/EN columns), not in message files.

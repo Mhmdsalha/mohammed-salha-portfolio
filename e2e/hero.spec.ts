@@ -91,7 +91,8 @@ test("reduced motion: rings, word cycle, dot and entrances are still", async ({ 
     ".animate-word-cycle",
     ".animate-dot-pulse",
     ".animate-portrait-in",
-    ".animate-line-rise"
+    ".animate-line-rise",
+    ".animate-fade-up"
   ]) {
     await expect(page.locator(selector).first(), selector).toHaveCSS("animation-name", "none");
   }
@@ -117,3 +118,29 @@ test("the preview is not indexed", async ({ page }) => {
   await open(page, "ar");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
 });
+
+for (const locale of ["ar", "en"] as const) {
+  test(`${locale}: the design fonts are really used and loaded (A7 review)`, async ({ page }) => {
+    await open(page, locale);
+    const family = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((el) => getComputedStyle(el).fontFamily);
+
+    expect(await family("#hero-title")).toMatch(/^"?Alexandria/);
+    expect(await family(".animate-word-cycle")).toMatch(/^"?Alexandria/);
+    expect(await family("section#top p.text-lead")).toMatch(/^"?IBM Plex Sans Arabic/);
+    expect(await family("[data-hero-portrait] text")).toMatch(/^"?IBM Plex Sans Arabic/);
+
+    // The font files themselves arrived (not just a name in the stack).
+    const loaded = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return [...document.fonts]
+        .filter((f) => f.status === "loaded")
+        .map((f) => f.family.replace(/"/g, ""));
+    });
+    expect(loaded).toContain("Alexandria");
+    expect(loaded).toContain("IBM Plex Sans Arabic");
+  });
+}

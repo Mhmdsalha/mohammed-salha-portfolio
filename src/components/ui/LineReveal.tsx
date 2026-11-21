@@ -18,7 +18,8 @@ type LineRevealProps = {
 /**
  * Lines that rise out of a clip, one after another (SPEC §2 `rise`, hero h1). Pure CSS.
  * The clip box keeps 0.08em above and 0.14em below so Arabic ascenders and descenders are not cut
- * (R3). A space before each later line keeps the words apart for screen readers.
+ * (R3), and 0.06em at each side (offset by a negative margin) so an outline's outer edge is not
+ * shaved at the line end. A space before each later line keeps the words apart for screen readers.
  * Reduced motion: no animation, lines are simply shown.
  */
 export function LineReveal({
@@ -32,7 +33,10 @@ export function LineReveal({
   return (
     <Component id={id} className={clsx("font-display font-black", className)}>
       {lines.map((line, i) => (
-        <span key={i} className="block overflow-hidden pt-[0.08em] pb-[0.14em]">
+        <span
+          key={i}
+          className="-mx-[0.06em] block overflow-hidden px-[0.06em] pt-[0.08em] pb-[0.14em]"
+        >
           {i > 0 ? " " : null}
           <span
             className={clsx(
