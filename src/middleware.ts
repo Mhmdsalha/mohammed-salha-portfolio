@@ -5,8 +5,8 @@ import {
   getSessionKey,
   verifySessionToken
 } from "@/lib/auth/session";
+import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
 
-const locales = ["en", "ar"];
 const LOGIN_PATH = "/dashboard/login";
 
 function isDashboardPath(pathname: string) {
@@ -22,7 +22,31 @@ function redirectToLogin(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const localeDashboardPrefix = locales.find(
+
+  // "/" opens the Arabic site (Arabic first, P3-2). Temporary, so it can follow the visitor's
+  // language later without browsers caching it.
+  if (pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${DEFAULT_LOCALE}`;
+    return NextResponse.redirect(url, 307);
+  }
+
+  // Paths outside every route group (e.g. /xyz) move under the default locale, as next-intl does;
+  // /ar/xyz then renders the localised 404 from src/app/[locale]/not-found.tsx (D-026).
+  const first = pathname.split("/")[1] ?? "";
+  if (
+    !LOCALES.includes(first as (typeof LOCALES)[number]) &&
+    first !== "dashboard" &&
+    first !== "dev" &&
+    !first.startsWith("_") &&
+    !pathname.includes(".")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${DEFAULT_LOCALE}${pathname}`;
+    return NextResponse.redirect(url, 307);
+  }
+
+  const localeDashboardPrefix = LOCALES.find(
     (locale) => pathname === `/${locale}/dashboard` || pathname.startsWith(`/${locale}/dashboard/`)
   );
 
