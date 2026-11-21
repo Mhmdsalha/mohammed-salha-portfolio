@@ -121,7 +121,7 @@ The featured slides, archive rows and skills in the mockup are hard-coded in its
 | V-7 | Rotating words are 5 stacked spans read in full by screen readers | Static accessible name (`aria-label` or visually hidden full sentence), animated spans `aria-hidden` | P4-2 acceptance |
 | V-8 | Screenshot well shows "[ لقطة شاشة المشروع ]" | Real screenshot via `next/image`; the placeholder never ships | Project risk: placeholders |
 | V-9 | "معاينة مباشرة" always shown | Render only when the project has a `live_url` | No dead links |
-| V-10 | `-webkit-text-stroke` outline on Arabic display text | Keep, but check overlap seams at glyph joins in Alexandria at every weight; fall back to a solid lighter fill if seams show | R20 |
+| V-10 | `-webkit-text-stroke` outline on Arabic display text | Keep the outline, but paint the stroke under a background-coloured fill (`paint-order: stroke fill`, stroke doubled) to hide the seams where connected letters overlap; solid text in forced-colours mode. Outlined text must sit on its `--outline-fill` colour (D-022) | Seams confirmed in Alexandria 900 (R20) |
 | V-11 | Nav hidden below 900px with no replacement | Mobile menu sheet (P4-1) | Navigation on phones |
 | V-12 | Header `backdrop-filter: blur(10px)` | Keep, but no animated `filter` anywhere (audit P2); drop the blur if mobile scroll jank shows in Lighthouse | Performance |
 

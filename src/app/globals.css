@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/*
+ * Direction variants use the element's real directionality (:dir), so an LTR block nested in an
+ * RTL page (or the reverse) gets the right one. Tailwind's default matches any [dir="rtl"]
+ * ancestor, which makes both rtl: and ltr: apply inside a nested block (A7 review of P2-2).
+ */
+@custom-variant rtl (&:dir(rtl));
+@custom-variant ltr (&:dir(ltr));
+
 /* Only scan app code for class names: test strings and docs must not add utilities to the build. */
 @source not "../../tests";
 @source not "../../e2e";
@@ -91,6 +99,118 @@
   --ease-reveal: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-sweep: cubic-bezier(0.7, 0, 0.2, 1);
   --ease-pop: cubic-bezier(0.3, 1.3, 0.5, 1);
+
+  /* Motion (P2-2, CSS first: D-013). Durations match src/lib/motion.ts. */
+  --animate-line-rise: line-rise 1s var(--ease-reveal) both;
+  --animate-fade-up: fade-up 0.9s var(--ease-reveal) both;
+  --animate-rule-draw: rule-draw 1.2s var(--ease-sweep) both;
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes line-rise {
+    from {
+      transform: translateY(110%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes rule-draw {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* The track holds two copies of the items, so -50% loops seamlessly. */
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+@keyframes scroll-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Scroll-driven reveal (SPEC §2 `.sr`). Only where the browser supports view timelines and the
+ * visitor allows motion; everywhere else the content is simply visible (never hidden).
+ */
+@utility reveal-on-scroll {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: scroll-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+
+/*
+ * Outlined display text (SPEC V-10, R20). Falls back to solid text where text-stroke is missing
+ * and in forced-colours mode, so the words never disappear.
+ */
+@utility text-outline {
+  @supports (-webkit-text-stroke: 1px) {
+    color: transparent;
+    -webkit-text-stroke: var(--stroke-outline) var(--outline-color, var(--color-ink));
+  }
+  /* Stroke first, then fill with the background colour: hides the seams where connected Arabic
+     letters overlap (R20). The stroke is doubled because the fill covers its inner half. */
+  @supports (-webkit-text-stroke: 1px) and (paint-order: stroke fill) {
+    color: var(--outline-fill, var(--color-paper));
+    -webkit-text-stroke-width: calc(var(--stroke-outline) * 2);
+    paint-order: stroke fill;
+  }
+  @media (forced-colors: active) {
+    color: CanvasText;
+    -webkit-text-stroke: 0;
+  }
+}
+
+@utility text-outline-light {
+  --outline-color: var(--color-paper);
+  --outline-fill: var(--color-ink);
+  @supports (-webkit-text-stroke: 1px) {
+    color: transparent;
+    -webkit-text-stroke: var(--stroke-outline) var(--outline-color);
+  }
+  /* Stroke first, then fill with the background colour: hides the seams where connected Arabic
+     letters overlap (R20). The stroke is doubled because the fill covers its inner half. */
+  @supports (-webkit-text-stroke: 1px) and (paint-order: stroke fill) {
+    color: var(--outline-fill);
+    -webkit-text-stroke-width: calc(var(--stroke-outline) * 2);
+    paint-order: stroke fill;
+  }
+  @media (forced-colors: active) {
+    color: CanvasText;
+    -webkit-text-stroke: 0;
+  }
 }
 
 /* ---- Old site styles below: removed as P4 replaces each section (D-021). ---- */
