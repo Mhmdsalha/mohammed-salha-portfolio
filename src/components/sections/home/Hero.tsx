@@ -9,6 +9,9 @@ import type { Locale } from "@/types";
 // off under reduced motion. The portrait is the LCP element on mobile: it is preloaded with high
 // priority and never starts transparent (V-1, R6).
 
+// Numbered keys, not an array: next-intl stops checking key names in a namespace with arrays.
+const WORD_KEYS = ["1", "2", "3", "4"] as const;
+
 const enter = "animate-fade-up motion-reduce:animate-none";
 
 /** Latin runs inside Arabic lines stay whole and isolated (R15). */
@@ -16,7 +19,7 @@ const latin = (chunks: React.ReactNode) => <bdi className="whitespace-nowrap">{c
 
 export async function Hero({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "home.hero" });
-  const words = t.raw("words") as string[];
+  const words = WORD_KEYS.map((key) => t(`words.${key}`));
 
   return (
     <section

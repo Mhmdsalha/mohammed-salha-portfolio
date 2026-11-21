@@ -251,6 +251,18 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 - **When it is checked:** field data needs real traffic on the real page, so the budget is checked after P4-10 makes the new design the live home page, and again at launch (L-2). P4-2's LCP criterion moves there; P4-2 is done.
 - The levers in D-023 still apply, because simulated and real LCP both improve with less JavaScript and fewer font bytes before the first paint: P3-2 and P4-10 cleanup, and fewer first-screen font files on `/ar`.
 
+## D-025 Message files and the no-hard-coded-copy rule (P3-1) — Accepted (2026-11-21)
+
+- **Structure:** `site.*` holds what every page shares: `meta`, `nav`, `footer`, `errors`. `home.*` holds one key per section: `hero`, `spec`, `marquee`, `featured`, `archive`, `skills`, `education`, `contact`, the shared `projectLabels` / `projectLabelsShort` / `projectKinds`, and `project` for the case-study page. Project and skill text (names, descriptions, highlights) lives in the database in AR/EN columns (D1-2), not here. Contact values (email, phone, links) are dashboard settings, not copy (D-014).
+- **Old keys removed:** `nav`, `hero`, `about`, `projects`, `services`, `contact` and `footer` were not read anywhere (the old components hard-code their copy), and they held Salla text. The old live pages are unchanged, because their copy is in the components; it goes when P4-10 deletes them.
+- **Copy sources:** the CV for facts; the design for tone and the Arabic phrasing (D-014). The owner's answers are in CONTENT.md (C-2, C-3, C-7). The education rows add the CV's years (2020 – 2025; C-9).
+- **Checked by machine:**
+  - **Typed keys:** `src/global.d.ts` types next-intl against `en.json`, so a missing or misspelt key fails `npm run typecheck`.
+  - **No arrays in message files:** next-intl stops checking key names in any namespace that contains an array, so lists use numbered keys (`words.1`…`words.4`). A test enforces this.
+  - **`tests/unit/messages.test.ts`:** AR and EN have the same keys; no empty values; matching ICU placeholders; no Arabic value equal to the English one except listed names, technologies and numbers; no Salla copy.
+  - **`react/jsx-no-literals`:** hard-coded text in JSX fails `npm run lint` in the new site's code: `sections/home`, `components/site`, the design primitives and the preview route. Symbols such as ✦, — and · are allowed. Props are not checked by the rule, so `aria-label` text and similar must still come from messages (reviewer checklist).
+- **Acceptance "/ar and /en show zero untranslated strings":** this holds for the new site on `/[locale]/preview`, the only place the new copy is used. The live `/ar` and `/en` stay the old site until P4-10, which repeats the check on the final pages.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).

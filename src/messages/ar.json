@@ -1,45 +1,39 @@
 {
-  "nav": {
-    "about": "نبذة",
-    "work": "الأعمال",
-    "services": "الخدمات",
-    "contact": "التواصل",
-    "hire": "وظفني"
-  },
-  "hero": {
-    "badge": "متاح للعمل",
-    "badgeAr": "Available for work",
-    "subtext": "أبني تجارب رقمية راقية للعالم العربي - من غزة، فلسطين.",
-    "cta1": "شاهد أعمالي",
-    "cta2": "تواصل معي"
-  },
-  "about": {
-    "heading": "نبذة عني",
-    "headingAr": "About Me",
-    "bio": "مطوّر ويب متكامل من غزة، فلسطين، متخصص في تجارب الويب الحديثة ومتاجر سلة للسوق العربي، أجمع بين الدقة التقنية والتصميم المدروس لبناء منتجات راقية.",
-    "bioAr": "Full-stack developer from Gaza, Palestine specializing in modern web experiences and Salla e-commerce stores for the Arab market."
-  },
-  "projects": {
-    "heading": "أبرز المشاريع",
-    "headingAr": "Selected Projects",
-    "all": "الكل",
-    "salla": "متاجر سلة",
-    "webapp": "تطبيقات ويب",
-    "pos": "أنظمة نقاط بيع",
-    "featured": "مشروع مميز"
-  },
-  "services": {
-    "heading": "ما أقدمه",
-    "headingAr": "What I Do"
-  },
-  "contact": {
-    "heading": "نبني شيئاً مميزاً معاً",
-    "headingAr": "Let's Build Something",
-    "subtext": "متاح للمشاريع المستقلة والتعاون.",
-    "subtextAr": "Available for freelance projects and collaborations."
-  },
-  "footer": {
-    "built": "صُمم وبُني من غزة، فلسطين"
+  "site": {
+    "meta": {
+      "title": "محمد صالحة — مهندس حاسوب ومطوّر Full-Stack",
+      "description": "مهندس حاسوب ومطوّر Full-Stack من غزة. أبني منصات ويب متكاملة بـ Next.js وTypeScript وFastAPI، مع تركيز على المنصات العربية وتجارب RTL."
+    },
+    "nav": {
+      "label": "القائمة الرئيسية",
+      "logo": "محمد صالحة",
+      "home": "الرئيسية",
+      "projects": "المشاريع",
+      "skills": "المهارات",
+      "education": "التعليم",
+      "contact": "تواصل",
+      "switchLocale": "EN",
+      "switchLocaleLabel": "English version",
+      "cv": "السيرة الذاتية",
+      "cvLabel": "تحميل السيرة الذاتية (PDF)",
+      "openMenu": "فتح القائمة",
+      "closeMenu": "إغلاق القائمة",
+      "skipToContent": "تخطَّ إلى المحتوى"
+    },
+    "footer": {
+      "rights": "© {year} محمد صالحة",
+      "madeIn": "صُمّم وبُني في غزة",
+      "wordmark": "محمد صالحة"
+    },
+    "errors": {
+      "notFoundTitle": "الصفحة غير موجودة",
+      "notFoundBody": "ربما نُقلت الصفحة، أو أن الرابط غير صحيح.",
+      "backHome": "العودة إلى الرئيسية",
+      "errorTitle": "حدث خطأ",
+      "errorBody": "تعذّر تحميل هذا الجزء. حاول مرة أخرى بعد قليل.",
+      "retry": "حاول مرة أخرى",
+      "loading": "جارٍ التحميل…"
+    }
   },
   "home": {
     "hero": {
@@ -47,13 +41,163 @@
       "titleLine1": "مهندس حاسوب",
       "titleLine2": "ومطوّر <latin>Full-Stack</latin>",
       "builds": "أبني",
-      "words": ["منصات خدمات متكاملة", "أنظمة نقاط بيع", "لوحات تحكم وإدارة", "واجهات عربية سريعة"],
+      "words": {
+        "1": "منصات خدمات متكاملة",
+        "2": "أنظمة نقاط بيع",
+        "3": "لوحات تحكم وإدارة",
+        "4": "واجهات عربية سريعة"
+      },
       "wordsSentence": "أبني منصات خدمات متكاملة، وأنظمة نقاط بيع، ولوحات تحكم وإدارة، وواجهات عربية سريعة.",
       "lead": "خريج هندسة الحاسوب من الجامعة الإسلامية بغزة. أعمل على المنتج كاملاً — من الواجهة وتجربة المستخدم إلى الخادم وقاعدة البيانات — مع تركيز خاص على المنصات العربية وتجارب RTL.",
       "ctaProjects": "استعرض المشاريع",
       "ctaCv": "تحميل السيرة الذاتية",
       "portraitAlt": "صورة محمد صالحة",
       "ring": "مهندس حاسوب ✦ مطوّر ويب متكامل ✦ غزة، فلسطين ✦ مهندس حاسوب ✦ مطوّر ويب متكامل ✦ غزة، فلسطين ✦ مهندس حاسوب ✦ مطوّر ويب متكامل ✦ غزة، فلسطين ✦"
+    },
+    "spec": {
+      "specialty": {
+        "index": "01",
+        "label": "التخصص",
+        "value": "هندسة الحاسوب",
+        "detail": "بكالوريوس — الجامعة الإسلامية بغزة"
+      },
+      "role": {
+        "index": "02",
+        "label": "الدور",
+        "value": "Full-Stack Developer",
+        "detail": "مستوى Junior — واجهة، خادم، وقواعد بيانات"
+      },
+      "stack": {
+        "index": "03",
+        "label": "التقنيات الأساسية",
+        "items": {
+          "1": "Next.js",
+          "2": "TypeScript",
+          "3": "FastAPI",
+          "4": "PostgreSQL"
+        }
+      },
+      "status": {
+        "index": "04",
+        "label": "الحالة",
+        "value": "متاح للعمل",
+        "location": "غزة، فلسطين · عن بُعد",
+        "clockLabel": "الوقت الآن في غزة"
+      }
+    },
+    "marquee": {
+      "label": "التقنيات التي أعمل بها",
+      "pause": "إيقاف الحركة",
+      "items": {
+        "1": "Next.js",
+        "2": "React",
+        "3": "TypeScript",
+        "4": "FastAPI",
+        "5": "PostgreSQL",
+        "6": "Prisma",
+        "7": "Tailwind CSS",
+        "8": "WebSocket"
+      }
+    },
+    "featured": {
+      "index": "01",
+      "eyebrow": "أبرز الأعمال",
+      "title": "المشاريع",
+      "outlined": "الرئيسية",
+      "tablistLabel": "المشاريع الرئيسية",
+      "counterLabel": "المشروع {current} من {total}",
+      "previous": "المشروع السابق",
+      "next": "المشروع التالي",
+      "pauseAutoplay": "إيقاف التشغيل التلقائي",
+      "playAutoplay": "تشغيل تلقائي",
+      "caseStudy": "دراسة الحالة",
+      "live": "معاينة مباشرة",
+      "source": "الكود على GitHub",
+      "screenshotAlt": "لقطة شاشة لمشروع {name}"
+    },
+    "archive": {
+      "index": "02",
+      "eyebrow": "الأرشيف",
+      "title": "كل المشاريع",
+      "countLabel": "{count, plural, one {مشروع واحد} two {مشروعان} few {# مشاريع} many {# مشروعاً} other {# مشروع}}",
+      "openCaseStudy": "افتح دراسة حالة {name}"
+    },
+    "projectLabels": {
+      "training": "مشروع تدريبي",
+      "graduation": "مشروع التخرج",
+      "applied": "مشروع تطبيقي"
+    },
+    "projectLabelsShort": {
+      "training": "تدريبي",
+      "graduation": "تخرج",
+      "applied": "تطبيقي"
+    },
+    "projectKinds": {
+      "webapp": "تطبيق ويب",
+      "system": "نظام إدارة",
+      "platform": "منصة خدمات",
+      "store": "متجر إلكتروني"
+    },
+    "skills": {
+      "index": "03",
+      "eyebrow": "المهارات",
+      "title": "الأدوات",
+      "outlined": "التي أعمل بها",
+      "intro": "كل أداة هنا مرتبطة بمشروع حقيقي استخدمتها فيه.",
+      "tablistLabel": "مجالات المهارات",
+      "categories": {
+        "frontend": "الواجهة الأمامية",
+        "backend": "الخلفية والخوادم",
+        "database": "قواعد البيانات",
+        "infra": "البنية والنشر"
+      },
+      "total": "أداة وتقنية عبر أربعة مجالات",
+      "usedIn": "استُخدمت في: {projects}"
+    },
+    "education": {
+      "index": "04",
+      "eyebrow": "التعليم",
+      "title": "هندسة",
+      "outlined": "الحاسوب",
+      "rows": {
+        "degree": {
+          "label": "الدرجة",
+          "value": "بكالوريوس هندسة الحاسوب"
+        },
+        "university": {
+          "label": "الجامعة",
+          "value": "الجامعة الإسلامية — غزة"
+        },
+        "years": {
+          "label": "الفترة",
+          "value": "2020 – 2025"
+        },
+        "project": {
+          "label": "مشروع التخرج",
+          "value": "منصة لإدارة مشاريع التخرج بتحديثات لحظية"
+        },
+        "stack": {
+          "label": "تقنيات المشروع",
+          "value": "React · Express · MongoDB · Socket.IO"
+        }
+      },
+      "closing": "خلفية هندسية تمنحني فهماً للنظام كاملاً — من الخادم وقاعدة البيانات حتى <mark>التفصيلة الأخيرة في الواجهة.</mark>"
+    },
+    "contact": {
+      "question": "تبحث عن مطوّر ينضم لفريقك، أو لديك مشروع؟",
+      "cta": "لنتحدث",
+      "email": "البريد الإلكتروني",
+      "whatsapp": "واتساب",
+      "github": "GitHub",
+      "linkedin": "LinkedIn"
+    },
+    "project": {
+      "backToProjects": "كل المشاريع",
+      "overview": "نظرة عامة",
+      "highlights": "أبرز ما في المشروع",
+      "stack": "التقنيات",
+      "gallery": "معرض الصور",
+      "galleryImageAlt": "لقطة {index} من مشروع {name}"
     }
   }
 }

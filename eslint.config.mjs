@@ -38,6 +38,23 @@ const eslintConfig = [
     rules: {
       "no-console": ["error", { allow: ["warn", "error"] }]
     }
+  },
+  {
+    // P3-1: every visible string in the new site comes from src/messages (AR and EN). Applies to
+    // the new site's code only; old-site files are deleted in P4-10, and the dashboard keeps its
+    // own copy until the D5 tickets (D-025). Symbols that are not words are allowed.
+    files: [
+      "src/components/sections/home/**",
+      "src/components/site/**",
+      "src/components/ui/{Button,Icon,LineReveal,Marquee,Reveal,SectionHeader,Tag}.tsx",
+      "src/app/\\[locale\\]/preview/**"
+    ],
+    rules: {
+      "react/jsx-no-literals": [
+        "error",
+        { noStrings: true, ignoreProps: true, allowedStrings: ["✦", "—", "·", "/", "(", ")", "."] }
+      ]
+    }
   }
 ];
 

@@ -1,45 +1,39 @@
 {
-  "nav": {
-    "about": "About",
-    "work": "Work",
-    "services": "Services",
-    "contact": "Contact",
-    "hire": "Hire Me"
-  },
-  "hero": {
-    "badge": "Available for work",
-    "badgeAr": "متاح للعمل",
-    "subtext": "Building premium digital experiences for the Arab world - from Gaza, Palestine.",
-    "cta1": "View My Work",
-    "cta2": "Get in Touch"
-  },
-  "about": {
-    "heading": "About Me",
-    "headingAr": "نبذة عني",
-    "bio": "Full-stack developer from Gaza, Palestine specializing in modern web experiences and Salla e-commerce stores for the Arab market. I combine technical precision with thoughtful design to build products that feel premium.",
-    "bioAr": "مطوّر ويب متكامل من غزة، فلسطين، متخصص في تجارب الويب الحديثة ومتاجر سلة للسوق العربي، أجمع بين الدقة التقنية والتصميم المدروس لبناء منتجات راقية."
-  },
-  "projects": {
-    "heading": "Selected Projects",
-    "headingAr": "أبرز المشاريع",
-    "all": "All",
-    "salla": "Salla Stores",
-    "webapp": "Web Apps",
-    "pos": "POS Systems",
-    "featured": "Featured Project"
-  },
-  "services": {
-    "heading": "What I Do",
-    "headingAr": "ما أقدمه"
-  },
-  "contact": {
-    "heading": "Let's Build Something",
-    "headingAr": "نبني شيئاً مميزاً معاً",
-    "subtext": "Available for freelance projects and collaborations.",
-    "subtextAr": "متاح للمشاريع المستقلة والتعاون."
-  },
-  "footer": {
-    "built": "Designed and built from Gaza, Palestine"
+  "site": {
+    "meta": {
+      "title": "Mohammed Salha — Computer Engineer & Full-Stack Developer",
+      "description": "Computer engineer and full-stack developer from Gaza. I build complete web platforms with Next.js, TypeScript and FastAPI, with a focus on Arabic platforms and RTL experiences."
+    },
+    "nav": {
+      "label": "Main navigation",
+      "logo": "Mohammed Salha",
+      "home": "Home",
+      "projects": "Projects",
+      "skills": "Skills",
+      "education": "Education",
+      "contact": "Contact",
+      "switchLocale": "ع",
+      "switchLocaleLabel": "النسخة العربية",
+      "cv": "CV",
+      "cvLabel": "Download CV (PDF)",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "skipToContent": "Skip to content"
+    },
+    "footer": {
+      "rights": "© {year} Mohammed Salha",
+      "madeIn": "Designed and built in Gaza",
+      "wordmark": "Mohammed Salha"
+    },
+    "errors": {
+      "notFoundTitle": "Page not found",
+      "notFoundBody": "The page may have moved, or the link is wrong.",
+      "backHome": "Back to home",
+      "errorTitle": "Something went wrong",
+      "errorBody": "This part couldn't load. Please try again in a moment.",
+      "retry": "Try again",
+      "loading": "Loading…"
+    }
   },
   "home": {
     "hero": {
@@ -47,18 +41,163 @@
       "titleLine1": "Computer engineer",
       "titleLine2": "and <latin>Full-Stack</latin> developer",
       "builds": "I build",
-      "words": [
-        "service platforms",
-        "point-of-sale systems",
-        "admin dashboards",
-        "fast Arabic interfaces"
-      ],
+      "words": {
+        "1": "service platforms",
+        "2": "point-of-sale systems",
+        "3": "admin dashboards",
+        "4": "fast Arabic interfaces"
+      },
       "wordsSentence": "I build service platforms, point-of-sale systems, admin dashboards and fast Arabic interfaces.",
       "lead": "Computer Engineering graduate from the Islamic University of Gaza. I work across the whole product — from the interface and user experience to the server and database — with a focus on Arabic platforms and RTL experiences.",
       "ctaProjects": "View projects",
       "ctaCv": "Download CV",
       "portraitAlt": "Portrait of Mohammed Salha",
       "ring": "Computer engineer ✦ Full-Stack developer ✦ Gaza, Palestine ✦ Computer engineer ✦ Full-Stack developer ✦ Gaza, Palestine ✦"
+    },
+    "spec": {
+      "specialty": {
+        "index": "01",
+        "label": "Specialty",
+        "value": "Computer Engineering",
+        "detail": "B.Eng. — Islamic University of Gaza"
+      },
+      "role": {
+        "index": "02",
+        "label": "Role",
+        "value": "Full-Stack Developer",
+        "detail": "Junior level — front end, back end and databases"
+      },
+      "stack": {
+        "index": "03",
+        "label": "Core stack",
+        "items": {
+          "1": "Next.js",
+          "2": "TypeScript",
+          "3": "FastAPI",
+          "4": "PostgreSQL"
+        }
+      },
+      "status": {
+        "index": "04",
+        "label": "Status",
+        "value": "Available for work",
+        "location": "Gaza, Palestine · Remote",
+        "clockLabel": "Current time in Gaza"
+      }
+    },
+    "marquee": {
+      "label": "Technologies I work with",
+      "pause": "Pause animation",
+      "items": {
+        "1": "Next.js",
+        "2": "React",
+        "3": "TypeScript",
+        "4": "FastAPI",
+        "5": "PostgreSQL",
+        "6": "Prisma",
+        "7": "Tailwind CSS",
+        "8": "WebSocket"
+      }
+    },
+    "featured": {
+      "index": "01",
+      "eyebrow": "Selected work",
+      "title": "Featured",
+      "outlined": "projects",
+      "tablistLabel": "Featured projects",
+      "counterLabel": "Project {current} of {total}",
+      "previous": "Previous project",
+      "next": "Next project",
+      "pauseAutoplay": "Pause autoplay",
+      "playAutoplay": "Play autoplay",
+      "caseStudy": "Case study",
+      "live": "Live preview",
+      "source": "Code on GitHub",
+      "screenshotAlt": "Screenshot of {name}"
+    },
+    "archive": {
+      "index": "02",
+      "eyebrow": "Archive",
+      "title": "All projects",
+      "countLabel": "{count, plural, one {# project} other {# projects}}",
+      "openCaseStudy": "Open the {name} case study"
+    },
+    "projectLabels": {
+      "training": "Training project",
+      "graduation": "Graduation project",
+      "applied": "Applied project"
+    },
+    "projectLabelsShort": {
+      "training": "Training",
+      "graduation": "Graduation",
+      "applied": "Applied"
+    },
+    "projectKinds": {
+      "webapp": "Web app",
+      "system": "Management system",
+      "platform": "Services platform",
+      "store": "Online store"
+    },
+    "skills": {
+      "index": "03",
+      "eyebrow": "Skills",
+      "title": "The tools",
+      "outlined": "I work with",
+      "intro": "Every tool here is tied to a real project I used it in.",
+      "tablistLabel": "Skill areas",
+      "categories": {
+        "frontend": "Front end",
+        "backend": "Back end & servers",
+        "database": "Databases",
+        "infra": "Infrastructure & deployment"
+      },
+      "total": "tools and technologies across four areas",
+      "usedIn": "Used in: {projects}"
+    },
+    "education": {
+      "index": "04",
+      "eyebrow": "Education",
+      "title": "Computer",
+      "outlined": "Engineering",
+      "rows": {
+        "degree": {
+          "label": "Degree",
+          "value": "B.Eng. in Computer Engineering"
+        },
+        "university": {
+          "label": "University",
+          "value": "Islamic University of Gaza"
+        },
+        "years": {
+          "label": "Years",
+          "value": "2020 – 2025"
+        },
+        "project": {
+          "label": "Graduation project",
+          "value": "Graduation-project management platform with real-time updates"
+        },
+        "stack": {
+          "label": "Project stack",
+          "value": "React · Express · MongoDB · Socket.IO"
+        }
+      },
+      "closing": "An engineering background that lets me understand the whole system — from the server and database down to <mark>the last detail of the interface.</mark>"
+    },
+    "contact": {
+      "question": "Looking for a developer to join your team, or have a project?",
+      "cta": "Let's talk",
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "github": "GitHub",
+      "linkedin": "LinkedIn"
+    },
+    "project": {
+      "backToProjects": "All projects",
+      "overview": "Overview",
+      "highlights": "Highlights",
+      "stack": "Stack",
+      "gallery": "Gallery",
+      "galleryImageAlt": "Screenshot {index} of {name}"
     }
   }
 }
