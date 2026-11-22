@@ -2,7 +2,11 @@
   "site": {
     "meta": {
       "title": "Mohammed Salha — Computer Engineer & Full-Stack Developer",
-      "description": "Computer engineer and full-stack developer from Gaza. I build complete web platforms with Next.js, TypeScript and FastAPI, with a focus on Arabic platforms and RTL experiences."
+      "description": "Computer engineer and full-stack developer from Gaza, building complete web platforms with Next.js, TypeScript and FastAPI, focused on Arabic and RTL.",
+      "siteName": "Mohammed Salha",
+      "jobTitle": "Computer Engineer & Full-Stack Developer",
+      "location": "Gaza, Palestine",
+      "ogImageAlt": "Mohammed Salha — Computer Engineer and Full-Stack Developer, Gaza"
     },
     "nav": {
       "label": "Main navigation",

@@ -311,6 +311,47 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     - the switch: it fails rather than skips without a project link, and it clicks through.
   - Hero and security suites pass. The forged-cookie test now leaves the login page before setting each cookie, because the sidebar's prefetches were deleting it mid-test (1 in 50 runs failed; 75/75 after the fix).
 
+## D-027 SEO: metadata, hreflang, share cards, sitemap, robots, icons (P3-3) — Accepted (2026-11-22)
+
+- **One origin for absolute URLs** (`src/lib/seo.ts`, `siteUrl()`): `NEXT_PUBLIC_SITE_URL` if set (for a future custom domain), else Vercel's `VERCEL_PROJECT_PRODUCTION_URL` on every deployment, else the production domain whenever `VERCEL` is set (in case its system variables are not exposed), and `http://localhost:3000` only off Vercel. Previews therefore point canonical links at production, never at themselves, and production can never say localhost (A7 review).
+- **Metadata:**
+  - The locale layout sets site-wide defaults: `metadataBase`, the title with a `%s — {siteName}` template, description, Open Graph (`ar_AR`/`en_US` plus the other as alternate, the 1200×630 card) and a `summary_large_image` Twitter card.
+  - **Canonical, hreflang and `og:url` are set per page, never in the layout:** the layout's would be inherited by every page that forgets its own. The first version put `og:url` in the layout, so the preview and thrown 404s claimed the home URL (A7 review).
+    - Home: canonical plus `ar`, `en` and `x-default` → `/ar`.
+    - Project pages: their own title, a description cut to 160 characters, canonical and hreflang. `og:type` is `article`, and the image is the project's screenshot when it has an `https` thumbnail, else the site card.
+    - The preview, the dashboard and the 404s are `noindex` and have no canonical.
+  - Next replaces `openGraph`/`twitter` whole when a page sets them, so `socialMetadata()` always builds the full set.
+  - New copy is in `site.meta`: `siteName`, `jobTitle`, `location` and `ogImageAlt`. The English description was shortened to 150 characters (it was 176).
+  - Known and accepted: project thumbnails from Supabase have no `og:image` width or height, so Facebook may skip the image on a page's very first share. The favicon tag says `sizes="32x32"` (the ICO's first entry; it also holds 16 and 48).
+- **Share cards and icons are rendered by the browser, not by `next/og`:** Satori draws Arabic letters unjoined (R3).
+  - `/dev/brand` (development only, 404 in production) lays out the card in each language with the real fonts, tokens and portrait, plus the mark "م." (the logo's accent dot) on ink.
+  - `node scripts/brand-images.mjs` (with `next dev` running) screenshots them to:
+    - `public/og/{ar,en}.jpg`: 57 KB and 65 KB;
+    - `src/app/icon.png`: 512px, transparent corners;
+    - `src/app/apple-icon.png`: 180px, opaque;
+    - `src/app/favicon.ico`: 32, 16 and 48px PNGs in one ICO, written by the script.
+  - The files are committed; the build does not run the script. Re-run it when the name, role or portrait changes (P4-10). This also fixes the site-wide `/favicon.ico` 404 noted in D-023.
+- **Structured data** (`src/lib/structured-data.ts`, `<JsonLd>`):
+  - Home: a `ProfilePage` whose `mainEntity` is a `Person`, with name, the other language's name as `alternateName`, job title, description, portrait, URL, and `sameAs` from the dashboard's GitHub and LinkedIn settings (http/https only).
+  - Project pages: a two-item `BreadcrumbList`.
+  - No email or phone. The JSON is escaped so `<` can never close the script tag.
+- **`/sitemap.xml`:**
+  - Lists home and every project in both languages, each with `ar`/`en`/`x-default` alternates, and `lastmod` from `updated_at`.
+  - Real data only (`fallbackToMock: false`): if the database fails it lists just the home pages, never the mock projects.
+  - The Salla storefronts (category `salla`) are left out; they stay on the site until D1-2 removes them.
+  - It reads the projects at request time, so dashboard changes show without a rebuild.
+  - The preview, dashboard and dev pages are not listed.
+- **`/robots.txt`:**
+  - Allows everything except `/dashboard` and `/dev`, and names the sitemap.
+  - The preview is not blocked, so crawlers can read its `noindex`.
+  - On Vercel preview deployments (`VERCEL_ENV=preview`) it disallows everything.
+- **Checks:**
+  - Unit: 14 tests in `tests/unit/seo.test.ts`.
+  - E2E: `e2e/seo.spec.ts` (7 tests on the served HTML: absolute URLs, one canonical, `og:url` equal to it; robots, sitemap, icons and cards; noindex pages without `og:url`). It passes with the locale, security and hero suites.
+  - Lighthouse SEO: 100 on `/ar` and `/en`. Best practices: 96, from the Speed Insights script that only exists on Vercel.
+  - **Not yet done:** Google's Rich Results Test and the Facebook/LinkedIn share debuggers need a public URL. They run on production right after merge; the layout's tags go live with the current home page.
+- **Budget:** the two cards add 122 KB to `public/`. After P4-10 removes the old avatar and fonts, `public/` is about 170 KB, under the 300 KB criterion.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).

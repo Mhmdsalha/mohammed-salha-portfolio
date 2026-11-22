@@ -2,7 +2,11 @@
   "site": {
     "meta": {
       "title": "محمد صالحة — مهندس حاسوب ومطوّر Full-Stack",
-      "description": "مهندس حاسوب ومطوّر Full-Stack من غزة. أبني منصات ويب متكاملة بـ Next.js وTypeScript وFastAPI، مع تركيز على المنصات العربية وتجارب RTL."
+      "description": "مهندس حاسوب ومطوّر Full-Stack من غزة. أبني منصات ويب متكاملة بـ Next.js وTypeScript وFastAPI، مع تركيز على المنصات العربية وتجارب RTL.",
+      "siteName": "محمد صالحة",
+      "jobTitle": "مهندس حاسوب ومطوّر Full-Stack",
+      "location": "غزة، فلسطين",
+      "ogImageAlt": "محمد صالحة — مهندس حاسوب ومطوّر Full-Stack، غزة"
     },
     "nav": {
       "label": "القائمة الرئيسية",
