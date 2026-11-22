@@ -10,23 +10,15 @@ import { LivePreviewFrame } from "@/components/projects/LivePreviewFrame";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TagPill } from "@/components/ui/TagPill";
-import {
-  getProjectBySlug,
-  getProjectDescription,
-  getProjects,
-  getProjectTitle
-} from "@/lib/projects";
+import { getProjectBySlug, getProjectDescription, getProjectTitle } from "@/lib/projects";
 import { alternatesFor, clampDescription, defaultOgImage, socialMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/site-settings";
 import { breadcrumbJsonLd } from "@/lib/structured-data";
 import { Locale } from "@/types";
 
-export async function generateStaticParams() {
-  const projects = await getProjects();
-  return ["en", "ar"].flatMap((locale) =>
-    projects.map((project) => ({ locale, slug: project.slug }))
-  );
-}
+// No generateStaticParams: project pages render per request until D1-4 adds tagged caching
+// (D-028). The old one ran at build time without a request, so on Vercel it silently fell back
+// to the mock projects' slugs.
 
 export async function generateMetadata({
   params

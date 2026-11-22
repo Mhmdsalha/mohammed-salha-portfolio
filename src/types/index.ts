@@ -1,24 +1,27 @@
+import type { Tables } from "@/types/database";
+
 export type Locale = "en" | "ar";
 
-export type ProjectCategory = "salla" | "webapp" | "pos" | "other";
+// Database rows come from the generated types (src/types/database.ts, D-028); the check
+// constraints of supabase/migrations/0002_rebuild.sql narrow their text columns here.
+export const PROJECT_CATEGORIES = ["webapp", "system", "platform", "store"] as const;
+export type ProjectCategory = (typeof PROJECT_CATEGORIES)[number];
 
-export type Project = {
-  id: string;
-  slug: string;
-  title_ar: string;
-  title_en: string;
-  description_ar: string | null;
-  description_en: string | null;
+export const PROJECT_LABELS = ["training", "graduation", "applied"] as const;
+export type ProjectLabel = (typeof PROJECT_LABELS)[number];
+
+export const SKILL_CATEGORIES = ["frontend", "backend", "database", "infra"] as const;
+export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
+
+export type Project = Omit<Tables<"projects">, "category" | "label"> & {
   category: ProjectCategory;
-  tags: string[];
-  thumbnail_url: string | null;
-  images: string[];
-  live_url: string | null;
-  github_url: string | null;
-  featured: boolean;
-  order_num: number;
-  created_at: string;
-  updated_at: string;
+  label: ProjectLabel | null;
+};
+
+/** A skill with the slugs of the public projects that use it (P4-6 tiles). */
+export type Skill = Omit<Tables<"skills">, "category"> & {
+  category: SkillCategory;
+  projectSlugs: string[];
 };
 
 export type ProjectFormValues = {

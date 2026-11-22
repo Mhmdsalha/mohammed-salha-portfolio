@@ -81,7 +81,17 @@ Create a public Storage bucket named `projects`.
 
 The dashboard contact settings are stored automatically in a Supabase Storage bucket named `site-settings` as `settings.json`.
 
-Apply the SQL files in `supabase/migrations/` in name order (Supabase SQL editor or `supabase db push`). `0001_login_attempts.sql` creates the table and function behind the dashboard login rate limit: 5 attempts per 15 minutes per IP, and 100 per 15 minutes from all clients together (each IP counts for at most 5). Per-IP limits need Vercel's "Automatically expose System Environment Variables" setting (on by default); without it every visitor shares one limit. To unlock the login after an attack, run `delete from public.login_attempts;` in the SQL editor.
+Apply the SQL files in `supabase/migrations/` in name order (Supabase SQL editor or `supabase db push`). Each one is safe to re-run.
+
+- `0000_baseline.sql` is the original `projects` table above, so the later files also apply to an empty database.
+- `0002_rebuild.sql` is the rebuild's data model (docs/DECISIONS.md D-028):
+  - categories `webapp | system | platform | store`;
+  - `label`, `featured_order`, `highlights_ar/en` and `published`;
+  - the `skills` and `project_skills` tables;
+  - public read limited to published projects that have a GitHub link.
+- After changing a migration, run `npm run db:types` to regenerate `src/types/database.ts`. A unit test fails until you do.
+
+`0001_login_attempts.sql` creates the table and function behind the dashboard login rate limit: 5 attempts per 15 minutes per IP, and 100 per 15 minutes from all clients together (each IP counts for at most 5). Per-IP limits need Vercel's "Automatically expose System Environment Variables" setting (on by default); without it every visitor shares one limit. To unlock the login after an attack, run `delete from public.login_attempts;` in the SQL editor.
 
 ## Seed Projects
 
