@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ArrowLeft, ArrowUpRight, Github, Layers, Sparkles, Zap } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { JsonLd } from "@/components/site/JsonLd";
 import { LivePreviewFrame } from "@/components/projects/LivePreviewFrame";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -13,7 +16,9 @@ import {
   getProjects,
   getProjectTitle
 } from "@/lib/projects";
+import { alternatesFor, clampDescription, defaultOgImage, socialMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/site-settings";
+import { breadcrumbJsonLd } from "@/lib/structured-data";
 import { Locale } from "@/types";
 
 export async function generateStaticParams() {
@@ -21,6 +26,40 @@ export async function generateStaticParams() {
   return ["en", "ar"].flatMap((locale) =>
     projects.map((project) => ({ locale, slug: project.slug }))
   );
+}
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ locale: Locale; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const project = await getProjectBySlug(slug);
+  if (!project) return {};
+
+  const t = await getTranslations({ locale, namespace: "site.meta" });
+  const title = getProjectTitle(project, locale);
+  const description = clampDescription(getProjectDescription(project, locale) || t("description"));
+  const path = `/projects/${project.slug}`;
+  // The project's own screenshot when it has one on a public URL, else the site card.
+  const image = /^https:\/\//.test(project.thumbnail_url ?? "")
+    ? { url: project.thumbnail_url!, alt: title }
+    : defaultOgImage(locale, t("ogImageAlt"));
+
+  return {
+    title,
+    description,
+    alternates: alternatesFor(locale, path),
+    ...socialMetadata({
+      locale,
+      siteName: t("siteName"),
+      title: `${title} — ${t("siteName")}`,
+      description,
+      path,
+      image,
+      type: "article"
+    })
+  };
 }
 
 export default async function ProjectDetailsPage({
@@ -38,6 +77,7 @@ export default async function ProjectDetailsPage({
   const isAr = locale === "ar";
   const title = getProjectTitle(project, locale);
   const description = getProjectDescription(project, locale);
+  const nav = await getTranslations({ locale, namespace: "site.nav" });
 
   const highlights = [
     {
@@ -65,6 +105,12 @@ export default async function ProjectDetailsPage({
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbJsonLd(locale, [
+          { name: nav("home"), path: "/" },
+          { name: title, path: `/projects/${project.slug}` }
+        ])}
+      />
       <Header locale={locale} />
       <main className="pt-28">
         <section className="section-shell pb-10 pt-8 md:pb-14">

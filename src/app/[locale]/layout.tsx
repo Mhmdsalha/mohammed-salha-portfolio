@@ -6,6 +6,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { legacyMono } from "@/app/fonts";
 import { Background } from "@/components/ui/Background";
 import { LOCALES, dirOf, isLocale } from "@/lib/i18n/locales";
+import { defaultOgImage, siteUrl, socialMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -23,8 +24,26 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const t = await getTranslations({ locale, namespace: "site.meta" });
-  // Full SEO (Open Graph, hreflang, sitemap) is P3-3.
-  return { title: t("title"), description: t("description") };
+  const siteName = t("siteName");
+
+  // Site-wide defaults (P3-3, D-027). Canonical and hreflang are set by each page, never here:
+  // a layout's canonical would be inherited by every page that forgets its own.
+  return {
+    metadataBase: siteUrl(),
+    title: { default: t("title"), template: `%s — ${siteName}` },
+    description: t("description"),
+    applicationName: siteName,
+    authors: [{ name: siteName }],
+    creator: siteName,
+    ...socialMetadata({
+      locale,
+      siteName,
+      title: t("title"),
+      description: t("description"),
+      path: "/",
+      image: defaultOgImage(locale, t("ogImageAlt"))
+    })
+  };
 }
 
 /**
