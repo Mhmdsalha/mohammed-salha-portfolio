@@ -26,8 +26,8 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: "site.meta" });
   const siteName = t("siteName");
 
-  // Site-wide defaults (P3-3, D-027). Canonical and hreflang are set by each page, never here:
-  // a layout's canonical would be inherited by every page that forgets its own.
+  // Site-wide defaults (P3-3, D-027). Canonical, hreflang and og:url are set by each page, never
+  // here: the layout's would be inherited by every page that forgets its own (A7 review).
   return {
     metadataBase: siteUrl(),
     title: { default: t("title"), template: `%s — ${siteName}` },
@@ -40,7 +40,6 @@ export async function generateMetadata({
       siteName,
       title: t("title"),
       description: t("description"),
-      path: "/",
       image: defaultOgImage(locale, t("ogImageAlt"))
     })
   };

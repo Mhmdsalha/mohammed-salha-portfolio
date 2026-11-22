@@ -3,15 +3,21 @@ import { DEFAULT_LOCALE, LOCALES, type AppLocale, otherLocale } from "@/lib/i18n
 
 // SEO helpers shared by the layouts, pages, sitemap and robots (P3-3, D-027).
 
+/** Used on Vercel if its system variables are not exposed, so production never says localhost. */
+export const PRODUCTION_ORIGIN = "https://mohammed-salha-portfolio.vercel.app";
+
 /**
  * The site's public origin, for absolute URLs in canonical links, Open Graph, the sitemap and
  * JSON-LD. NEXT_PUBLIC_SITE_URL wins (set it when a custom domain is added); on Vercel the
  * production domain is used on every deployment, so previews never advertise themselves.
+ * localhost only off Vercel (local builds and CI).
  */
 export function siteUrl(): URL {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  return new URL(explicit || (vercel ? `https://${vercel}` : "http://localhost:3000"));
+  if (explicit) return new URL(explicit);
+  if (vercel) return new URL(`https://${vercel}`);
+  return new URL(process.env.VERCEL ? PRODUCTION_ORIGIN : "http://localhost:3000");
 }
 
 export function absoluteUrl(path: string): string {
@@ -48,7 +54,8 @@ type Social = {
   siteName: string;
   title: string;
   description: string;
-  path: string;
+  /** The page's own path; it sets og:url. Left out for the layout's defaults (A7 review). */
+  path?: string;
   image: { url: string; width?: number; height?: number; alt: string; type?: string };
   type?: "website" | "article";
 };
@@ -65,7 +72,7 @@ export function socialMetadata(social: Social): Pick<Metadata, "openGraph" | "tw
       siteName,
       title,
       description,
-      url: localePath(locale, path),
+      ...(path ? { url: localePath(locale, path) } : {}),
       locale: OG_LOCALE[locale],
       alternateLocale: [OG_LOCALE[otherLocale(locale)]],
       images: [image]

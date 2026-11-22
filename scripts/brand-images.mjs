@@ -5,10 +5,15 @@
 //
 // Writes public/og/{ar,en}.jpg (1200×630), src/app/icon.png (512), src/app/apple-icon.png (180)
 // and src/app/favicon.ico (32 + 16 + 48; Next reads the size of the first). Commit the results; the build does not run this.
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile as writeFileAt } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
+// Paths are relative to the repo root, wherever the script is run from.
+const ROOT = new URL("../", import.meta.url);
+const fromRoot = (path) => fileURLToPath(new URL(path, ROOT));
+const writeFile = (path, data) => writeFileAt(fromRoot(path), data);
 
 /** An .ico holding PNG images (supported by every current browser). */
 function icoFromPngs(entries) {
@@ -37,7 +42,13 @@ try {
     viewport: { width: 1400, height: 900 },
     deviceScaleFactor: 1
   });
-  const response = await page.goto(`${BASE_URL}/dev/brand`, { waitUntil: "networkidle" });
+  const response = await page
+    .goto(`${BASE_URL}/dev/brand`, { waitUntil: "networkidle" })
+    .catch((error) => {
+      throw new Error(`Cannot reach ${BASE_URL}/dev/brand: start \`npm run dev\` first.`, {
+        cause: error
+      });
+    });
   if (!response?.ok()) throw new Error(`/dev/brand returned ${response?.status()}: run next dev`);
   await page.evaluate(() => document.fonts.ready);
   // Hide Next's dev indicator, which would otherwise land in a corner of the screenshots.
@@ -49,7 +60,7 @@ try {
   const shot = (name, options = {}) =>
     page.locator(`[data-brand="${name}"]`).screenshot({ animations: "disabled", ...options });
 
-  await mkdir("public/og", { recursive: true });
+  await mkdir(fromRoot("public/og"), { recursive: true });
   for (const locale of ["ar", "en"]) {
     await writeFile(
       `public/og/${locale}.jpg`,

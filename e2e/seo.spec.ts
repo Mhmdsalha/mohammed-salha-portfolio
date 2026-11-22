@@ -4,7 +4,12 @@ import { expect, test } from "@playwright/test";
 const tag = (html: string, pattern: RegExp) => html.match(pattern)?.[1];
 const meta = (html: string, key: string) =>
   tag(html, new RegExp(`<meta (?:property|name)="${key}" content="([^"]*)"`));
-const pathOf = (url = "") => new URL(url, "http://x").pathname;
+// Absolute URLs only: a relative og:image or canonical fails here, not just in a debugger.
+const pathOf = (url = "") => {
+  expect(url, "an absolute http(s) URL").toMatch(/^https?:\/\/[^/]+\//);
+  return new URL(url).pathname;
+};
+const canonicals = (html: string) => [...html.matchAll(/<link rel="canonical" href="([^"]+)"/g)];
 
 function jsonLd(html: string) {
   return [...html.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)].map(
@@ -21,7 +26,9 @@ for (const [locale, other, ogLocale] of [
   }) => {
     const html = await (await request.get(`/${locale}`)).text();
 
+    expect(canonicals(html)).toHaveLength(1);
     expect(pathOf(tag(html, /<link rel="canonical" href="([^"]+)"/))).toBe(`/${locale}`);
+    expect(meta(html, "og:url")).toBe(tag(html, /<link rel="canonical" href="([^"]+)"/));
     for (const [lang, path] of [
       [locale, `/${locale}`],
       [other, `/${other}`],
@@ -53,6 +60,7 @@ test("a project page has its own title, canonical, hreflang and breadcrumb", asy
   expect(href, "a project link on /en").toBeTruthy();
 
   const html = await (await request.get(href!)).text();
+  expect(canonicals(html)).toHaveLength(1);
   expect(pathOf(tag(html, /<link rel="canonical" href="([^"]+)"/))).toBe(href);
   expect(pathOf(tag(html, /hrefLang="ar" href="([^"]+)"/))).toBe(href!.replace(/^\/en/, "/ar"));
   expect(meta(html, "og:type")).toBe("article");
@@ -95,10 +103,14 @@ test("icons and share cards are served", async ({ request }) => {
   }
 });
 
-test("the preview and dashboard stay out of the index", async ({ request }) => {
+test("the preview and dashboard stay out of the index and claim no page URL", async ({
+  request
+}) => {
   for (const path of ["/ar/preview", "/dashboard/login"]) {
     const html = await (await request.get(path)).text();
     expect(meta(html, "robots"), path).toContain("noindex");
     expect(html, path).not.toMatch(/<link rel="canonical"/);
+    // The layout's Open Graph defaults carry no og:url (A7 review).
+    expect(meta(html, "og:url"), path).toBeUndefined();
   }
 });

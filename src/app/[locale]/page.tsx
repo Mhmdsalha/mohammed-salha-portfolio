@@ -12,19 +12,30 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { JsonLd } from "@/components/site/JsonLd";
 import { otherLocale } from "@/lib/i18n/locales";
-import { alternatesFor, profileLinks } from "@/lib/seo";
+import { alternatesFor, defaultOgImage, profileLinks, socialMetadata } from "@/lib/seo";
 import { profilePageJsonLd } from "@/lib/structured-data";
 import { Locale } from "@/types";
 
-// P3-3: canonical + hreflang and the ProfilePage JSON-LD. P4-10 keeps both when it swaps the
-// preview in (D-027).
+// P3-3: canonical, hreflang, Open Graph with og:url, and the ProfilePage JSON-LD. P4-10 keeps
+// them when it swaps the preview in (D-027).
 export async function generateMetadata({
   params
 }: {
   params: Promise<{ locale: Locale }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  return { alternates: alternatesFor(locale) };
+  const t = await getTranslations({ locale, namespace: "site.meta" });
+  return {
+    alternates: alternatesFor(locale),
+    ...socialMetadata({
+      locale,
+      siteName: t("siteName"),
+      title: t("title"),
+      description: t("description"),
+      path: "/",
+      image: defaultOgImage(locale, t("ogImageAlt"))
+    })
+  };
 }
 
 export default async function PortfolioPage({ params }: { params: Promise<{ locale: Locale }> }) {

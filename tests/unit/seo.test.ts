@@ -12,6 +12,13 @@ import {
   socialMetadata
 } from "@/lib/seo";
 import { breadcrumbJsonLd, profilePageJsonLd } from "@/lib/structured-data";
+import type { Project } from "@/types";
+
+const getProjects = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/projects", () => ({ getProjects }));
+
+const project = (slug: string, category: Project["category"], updated_at: string) =>
+  ({ slug, category, updated_at }) as Project;
 
 // P3-3 (D-027): URLs, alternates, social tags, JSON-LD, sitemap and robots.
 
@@ -19,9 +26,8 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
   vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
   vi.stubEnv("VERCEL_ENV", "");
-  // No database in unit tests: the sitemap reads the mock projects.
-  vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
-  vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
+  vi.stubEnv("VERCEL", "");
+  getProjects.mockReset();
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -34,6 +40,11 @@ describe("siteUrl", () => {
     expect(siteUrl().origin).toBe("https://example.vercel.app");
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://salha.dev");
     expect(siteUrl().origin).toBe("https://salha.dev");
+  });
+
+  it("never falls back to localhost on Vercel, even without its system variables", () => {
+    vi.stubEnv("VERCEL", "1");
+    expect(siteUrl().origin).toBe("https://mohammed-salha-portfolio.vercel.app");
   });
 });
 
@@ -66,6 +77,17 @@ describe("socialMetadata", () => {
       alternateLocale: ["en_US"]
     });
     expect(tags.twitter).toMatchObject({ card: "summary_large_image" });
+  });
+
+  it("leaves og:url out without a path, so layout defaults never claim a page's URL", () => {
+    const tags = socialMetadata({
+      locale: "en",
+      siteName: "S",
+      title: "T",
+      description: "D",
+      image: { url: "/og/en.jpg", alt: "A" }
+    });
+    expect(tags.openGraph && "url" in tags.openGraph).toBe(false);
   });
 });
 
@@ -122,15 +144,26 @@ describe("JSON-LD", () => {
 });
 
 describe("sitemap.xml", () => {
-  it("lists home and every project in both locales, each with hreflang alternates", async () => {
+  it("lists home and every public project in both locales, with hreflang and lastmod", async () => {
+    getProjects.mockResolvedValue([
+      project("arzaq", "webapp", "2026-07-19T18:10:59.849855+00:00"),
+      project("lamsa", "salla", "2026-08-01T00:00:00+00:00"),
+      project("saree3", "pos", "2026-06-01T00:00:00+00:00")
+    ]);
     const entries = await sitemap();
-    const urls = entries.map((entry) => entry.url);
-    expect(urls).toContain("http://localhost:3000/ar");
-    expect(urls).toContain("http://localhost:3000/en");
-    const projects = urls.filter((url) => url.includes("/projects/"));
-    expect(projects.length).toBeGreaterThan(0);
-    expect(projects.length % 2).toBe(0);
-    expect(urls.some((url) => /preview|dashboard|dev/.test(url))).toBe(false);
+
+    // Real data only: a database failure must not publish the mock projects (A7 review).
+    expect(getProjects).toHaveBeenCalledWith({ fallbackToMock: false });
+    expect(entries.map((entry) => entry.url)).toEqual([
+      "http://localhost:3000/ar",
+      "http://localhost:3000/en",
+      "http://localhost:3000/ar/projects/arzaq",
+      "http://localhost:3000/en/projects/arzaq",
+      "http://localhost:3000/ar/projects/saree3",
+      "http://localhost:3000/en/projects/saree3"
+    ]);
+    // Home takes the newest public project's date; the Salla row does not count.
+    expect(entries[0]?.lastModified).toBe("2026-07-19T18:10:59.849855+00:00");
     for (const entry of entries) {
       expect(Object.keys(entry.alternates?.languages ?? {}).sort()).toEqual([
         "ar",
@@ -138,6 +171,14 @@ describe("sitemap.xml", () => {
         "x-default"
       ]);
     }
+  });
+
+  it("lists only the home pages when there are no projects", async () => {
+    getProjects.mockResolvedValue([]);
+    expect((await sitemap()).map((entry) => entry.url)).toEqual([
+      "http://localhost:3000/ar",
+      "http://localhost:3000/en"
+    ]);
   });
 });
 
