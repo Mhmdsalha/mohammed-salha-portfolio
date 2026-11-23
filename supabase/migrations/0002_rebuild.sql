@@ -9,6 +9,9 @@
 
 begin;
 
+-- Fail fast rather than queue the site's reads behind a lock someone else holds.
+set local lock_timeout = '5s';
+
 -- 1. Categories -----------------------------------------------------------------------------
 alter table public.projects drop constraint if exists projects_category_check;
 update public.projects set category = 'store' where category = 'salla';
@@ -92,6 +95,10 @@ create policy "Public read published projects" on public.projects
   for select to anon, authenticated
   using (published and github_url is not null);
 
+-- Supabase grants anon and authenticated every privilege on new tables; only row-level security
+-- stood between them and writes. Take the write privileges away too (defence in depth).
+revoke insert, update, delete, truncate on public.projects from anon, authenticated;
+
 -- 6. Skills ---------------------------------------------------------------------------------
 create table if not exists public.skills (
   id uuid primary key default gen_random_uuid(),
@@ -112,6 +119,7 @@ create index if not exists project_skills_skill_idx on public.project_skills (sk
 alter table public.skills enable row level security;
 alter table public.project_skills enable row level security;
 
+revoke all on public.skills, public.project_skills from anon, authenticated;
 grant select on public.skills, public.project_skills to anon, authenticated;
 grant all on public.skills, public.project_skills to service_role;
 
@@ -124,5 +132,23 @@ drop policy if exists "Public read project skills" on public.project_skills;
 create policy "Public read project skills" on public.project_skills
   for select to anon, authenticated
   using (exists (select 1 from public.projects p where p.id = project_id));
+
+-- 7. Guard: policies are OR'd, so any other policy that lets anon or authenticated read projects
+-- would keep hidden rows public. Stop (and roll everything back) if one exists (A7 review).
+do $$
+declare
+  extra text;
+begin
+  select string_agg(policyname, ', ') into extra
+  from pg_policies
+  where schemaname = 'public' and tablename = 'projects'
+    and cmd in ('SELECT', 'ALL')
+    and policyname not in ('Public read published projects', 'Service role full access')
+    and (roles && array['anon', 'authenticated', 'public']::name[]);
+  if extra is not null then
+    raise exception 'projects has other read policies (%): review and drop them first', extra;
+  end if;
+end
+$$;
 
 commit;

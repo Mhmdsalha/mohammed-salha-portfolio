@@ -368,11 +368,25 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     5. A trigger keeps `updated_at` current (the sitemap's `lastmod`).
     6. Public read is now `published and github_url is not null` for `anon` and `authenticated` (D-004, R17).
     7. `skills` and `project_skills` tables. Every skill is public; a project–skill link is public only when its project is, because the policy's subquery runs under the caller's row-level security.
+    8. Write privileges on all three tables are revoked from `anon` and `authenticated`. Supabase grants them every privilege by default, so until now only row-level security stopped writes.
+    9. **Guard:** policies are OR'd, so any other policy letting `anon` or `authenticated` read projects would keep hidden rows public. The migration raises an exception, and rolls everything back, if one exists (A7 review).
+    10. `lock_timeout` is 5 s, so a held lock fails the migration instead of queuing the site's reads behind it.
+  - Re-running is safe but not a no-op: a project featured since the last run gets a `featured_order`. Hidden featured projects keep a carousel position; the public query skips them.
   - **Order of release:** apply `0002` in the Supabase SQL editor **before** merging the code.
-    - The new code reads the new columns.
-    - The old code keeps working on the new schema: it reads with `*`, and row-level security hides Lamsa and Lolo.
-    - Until the merge, the old dashboard cannot list the two hidden stores, and its form cannot save the old categories.
-  - Site settings stay in Storage for now. D-005's `site_settings` table moves to D5-5, the ticket that rebuilds the settings page.
+    - The new code reads the new columns: before the migration, a preview of it returns 500 on pages that show data.
+    - The old code keeps working on the new schema: it reads with `*`, and row-level security hides Lamsa and Lolo. Its components only print the category text, so nothing crashes.
+    - Until the merge, the old dashboard cannot list the two hidden stores. Its form cannot save Oud or Saree3 either, because `store` and `system` fail its old enum. The old "Salla Stores" and "POS Systems" filter tabs are empty.
+    - **Before running (read-only, SQL editor):**
+      ```sql
+      select policyname, roles, cmd, qual from pg_policies where schemaname = 'public' and tablename = 'projects';
+      select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.projects'::regclass;
+      select tgname from pg_trigger where tgrelid = 'public.projects'::regclass and not tgisinternal;
+      ```
+      Expected: only `Public read` and `Service role full access`; only the primary key and the slug unique constraint; no triggers.
+      If the editor shows an error mid-run, run `rollback;` before anything else.
+    - **After running:** as anon, `GET /rest/v1/projects?select=slug` returns 5 slugs, without Lamsa or Lolo.
+  - Site settings stay in Storage for now. D-005's `site_settings` table moves to D5-5, the ticket that rebuilds the settings page. `getSiteSettings()` still returns defaults on any Storage error; D5-5 makes that throw too.
+  - `scripts/seed-projects.mjs` matches the new model (Saree3 `system`, the real GitHub links, labels, Arzaq featured). It now only **adds** missing projects (`ignoreDuplicates`); it never overwrites a row edited in the dashboard. Before, it reset thumbnails to null.
 - **Generated types:** `npm run db:types` (`scripts/gen-db-types.mjs`) writes `src/types/database.ts` in the format `supabase gen types typescript` uses.
   - It runs every migration in PGlite and reads the tables, columns, foreign keys and functions back from the catalog, so it needs no Supabase login or Docker.
   - A unit test fails if the committed file differs from the generated one.
@@ -381,24 +395,36 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 - **Public data API** (`src/lib/projects.ts`):
   - Functions: `getProjects`, `getFeatured` (by `featured_order`), `getProjectBySlug` (`.eq("slug")` and `maybeSingle`, not a scan of all projects) and `getSkills` (with each skill's public project slugs).
   - They read with a cookie-less anon client (`src/lib/supabase/public.ts`, D-008). Row-level security decides what is public.
-  - The `@supabase/ssr` cookie client is removed. With supabase-js 2.108 it lost the row types, and public reads never needed cookies.
+  - The `@supabase/ssr` cookie client and its dependency are removed. With supabase-js 2.108 it lost the row types, and public reads never needed cookies. The login rate limit's store no longer needs a cast: the generated types cover `register_login_attempt`.
   - **A database error throws `DataError`; it never falls back to mock data.**
   - Mock projects are used only when no Supabase env is set at all (local development, CI builds), and never on Vercel, where a missing env throws too.
   - Rows are checked against the unions: a row the constraints should have rejected throws.
   - Each read calls `connection()`, so pages that show data render per request until D1-4 adds tagged caching.
+  - `getProjectBySlug` is wrapped in React `cache()`, so a project page and its metadata share one query.
+  - **Error page:** `src/app/[locale]/error.tsx` shows a localised message with "try again" and "back to home" when a page fails (`site.errors`), instead of Next's unbranded English 500.
+    - Error boundaries are client components, and there is no `NextIntlClientProvider` (D-026). The locale layout therefore passes the four strings through a small context (`ErrorCopyProvider`); the message files never reach the browser.
+    - The designed version is P4-9.
+  - The sitemap logs the error when projects fail to load, then lists only the home pages.
   - The project page's `generateStaticParams` is removed. It ran at build time without a request, so on Vercel it silently used the mock projects' slugs.
 - **Dashboard reads** (`src/lib/admin-projects.ts`):
   - `getAllProjectsForAdmin` and `getProjectForAdmin` use the service-role client, so the dashboard still sees hidden projects.
   - Each calls `requireAdminPage()` first, although the page already did.
+  - `admin-projects.ts` and `supabase/admin.ts` import `server-only`, so a client import fails the build. Vitest aliases it to its empty module.
   - A malformed id is a 404 without a query.
 - **Salla removed** from the category type, the action's Zod schema, `ProjectForm` (new options, default `webapp`) and `ProjectFilter`, under the D-020 ownership exception. The filter now only shows categories that have projects.
   - `git grep -il salla -- src scripts` still lists three old home sections (`AboutSection`, `HeroSection`, `ServicesSection`). Their copy goes with P4, as D-020 planned, and L-2 runs the final check.
 - **Sitemap:** the Salla filter from P3-3 is gone, because row-level security already hides those rows. A database failure still lists only the home pages.
 - **Tests:**
-  - `tests/unit/db/rebuild-sql.test.ts` (11): the migrations on production-shaped rows. It covers the mapping, links, labels, carousel order, constraints, the `updated_at` trigger, anon visibility (hidden, unpublished, no writes, skill links), re-runs and a fresh database.
+  - `tests/unit/db/rebuild-sql.test.ts` (13), run under Supabase's default grants: the migrations on production-shaped rows. It covers:
+    - the mapping, links, labels, carousel order, constraints and the `updated_at` trigger;
+    - anon visibility: hidden, unpublished, no writes (permission denied despite the default grants), skill links;
+    - duplicate slugs (R9);
+    - re-runs and a fresh database;
+    - the guard refusing to run, with nothing changed, when another read policy exists.
   - `tests/unit/db/database-types.test.ts`: the generated types are current.
   - `tests/unit/data/projects.test.ts` (12): errors throw, the type narrowing, the slug query, featured order, skills, the env fallbacks, and the dashboard reads behind the admin check.
   - The e2e suites (seo, locale, security, hero) pass on a build without database env.
+  - Checked by hand on a build pointed at an unreachable database: `/ar` and a project page return 500 with the localised error page (Arabic and English), and the sitemap lists only the two home pages.
 
 ## Backlog (not in scope until A0 schedules it)
 

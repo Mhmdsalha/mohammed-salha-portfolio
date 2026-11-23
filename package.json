@@ -30,7 +30,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
-    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.45.4",
     "@vercel/speed-insights": "^2.1.0",
     "bcryptjs": "^3.0.3",
@@ -42,6 +41,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.55.0",
+    "server-only": "^0.0.1",
     "sonner": "^1.7.4",
     "zod": "^3.24.2"
   },

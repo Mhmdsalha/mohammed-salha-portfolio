@@ -32,6 +32,14 @@ const BEFORE: Array<[string, string, boolean, number, string | null]> = [
   ["misc-tool", "other", false, 7, "https://github.com/Mhmdsalha/misc"]
 ];
 
+// Supabase's API roles and default privileges: anon and authenticated get every privilege on new
+// tables, so only row-level security and explicit revokes protect them (A7 review).
+const SUPABASE_ROLES = `
+  create role anon; create role authenticated; create role service_role bypassrls;
+  grant usage on schema public to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on functions to anon, authenticated, service_role;`;
+
 async function rows<T>(query: string, params: unknown[] = []) {
   return (await db.query<T>(query, params)).rows;
 }
@@ -52,8 +60,7 @@ const project = (slug: string) =>
 
 beforeAll(async () => {
   db = new PGlite();
-  await db.exec("create role anon; create role authenticated; create role service_role bypassrls;");
-  await db.exec("grant usage on schema public to anon, authenticated, service_role;");
+  await db.exec(SUPABASE_ROLES);
   await db.exec(baseline);
   for (const [slug, category, featured, order, github] of BEFORE) {
     await db.query(
@@ -171,20 +178,23 @@ describe("what the public (anon) can read", () => {
     }
   });
 
-  it("cannot write projects", async () => {
+  it("cannot write projects, even with Supabase's default grants (privileges revoked)", async () => {
     await db.exec("set role anon");
     try {
-      await expect(db.query("update public.projects set title_en = 'x'")).rejects.toThrow(
-        /permission denied/
-      );
-      await expect(
-        db.query(
-          "insert into public.projects (slug, title_ar, title_en, category) values ('x','x','x','webapp')"
-        )
-      ).rejects.toThrow(/permission denied/);
+      for (const statement of [
+        "update public.projects set title_en = 'x'",
+        "delete from public.projects",
+        "insert into public.projects (slug, title_ar, title_en, category) values ('x','x','x','webapp')",
+        "insert into public.skills (name, abbr, category) values ('x','x','infra')"
+      ]) {
+        await expect(db.query(statement), statement).rejects.toThrow(/permission denied/);
+      }
     } finally {
       await db.exec("reset role");
     }
+    expect(
+      (await rows<{ n: number }>("select count(*)::int as n from public.projects"))[0]?.n
+    ).toBe(BEFORE.length);
   });
 
   it("sees every skill but only the links to public projects", async () => {
@@ -201,6 +211,16 @@ describe("what the public (anon) can read", () => {
     expect(
       await asAnon<{ n: number }>("select count(*)::int as n from public.project_skills")
     ).toEqual([{ n: 1 }]);
+  });
+});
+
+describe("data rules", () => {
+  it("rejects a second project with the same slug (R9)", async () => {
+    await expect(
+      db.query(
+        "insert into public.projects (slug, title_ar, title_en, category) values ('arzaq-marketplace','x','x','webapp')"
+      )
+    ).rejects.toThrow(/projects_slug_key/);
   });
 });
 
@@ -226,9 +246,7 @@ describe("re-running the migrations", () => {
   it("applies to a fresh, empty database too", async () => {
     const fresh = new PGlite();
     try {
-      await fresh.exec(
-        "create role anon; create role authenticated; create role service_role bypassrls;"
-      );
+      await fresh.exec(SUPABASE_ROLES);
       for (const file of [baseline, loginAttempts, rebuild]) await fresh.exec(file);
       const { rows: tables } = await fresh.query<{ table_name: string }>(
         "select table_name from information_schema.tables where table_schema = 'public' order by 1"
@@ -241,6 +259,27 @@ describe("re-running the migrations", () => {
       ]);
     } finally {
       await fresh.close();
+    }
+  });
+
+  it("refuses to run, changing nothing, if another policy would keep hidden rows readable", async () => {
+    const other = new PGlite();
+    try {
+      await other.exec(SUPABASE_ROLES);
+      await other.exec(baseline);
+      await other.exec(`
+        insert into public.projects (slug, title_ar, title_en, category)
+          values ('lamsa', 'x', 'x', 'salla');
+        create policy "Enable read access for all users" on public.projects for select using (true);`);
+      await other.exec(loginAttempts);
+      await expect(other.exec(rebuild)).rejects.toThrow(/Enable read access for all users/);
+      await other.exec("rollback");
+      const { rows: after } = await other.query<{ category: string }>(
+        "select category from public.projects"
+      );
+      expect(after).toEqual([{ category: "salla" }]);
+    } finally {
+      await other.close();
     }
   });
 });

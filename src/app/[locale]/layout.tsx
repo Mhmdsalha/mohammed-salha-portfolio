@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import "@/app/globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { legacyMono } from "@/app/fonts";
+import { ErrorCopyProvider } from "@/components/site/ErrorCopy";
 import { Background } from "@/components/ui/Background";
 import { LOCALES, dirOf, isLocale } from "@/lib/i18n/locales";
 import { defaultOgImage, siteUrl, socialMetadata } from "@/lib/seo";
@@ -62,13 +63,24 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   setRequestLocale(locale);
+  const errors = await getTranslations({ locale, namespace: "site.errors" });
 
   return (
     <html lang={locale} dir={dirOf(locale)} suppressHydrationWarning>
       <body className={legacyMono.variable}>
         {/* Old site's backdrop; the new pages paint over it until P4-10 removes it. */}
         <Background />
-        {children}
+        <ErrorCopyProvider
+          copy={{
+            title: errors("errorTitle"),
+            body: errors("errorBody"),
+            retry: errors("retry"),
+            backHome: errors("backHome"),
+            homeHref: `/${locale}`
+          }}
+        >
+          {children}
+        </ErrorCopyProvider>
         {/* Real-visitor Core Web Vitals: the LCP budget is judged on this field data (D-024). */}
         <SpeedInsights />
       </body>

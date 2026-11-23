@@ -44,38 +44,7 @@ Contact details such as WhatsApp, email, GitHub, LinkedIn, X, Khamsat, and Mosta
 
 ## Supabase Setup
 
-Create the `projects` table:
-
-```sql
-create table projects (
-  id uuid default gen_random_uuid() primary key,
-  slug text unique not null,
-  title_ar text not null,
-  title_en text not null,
-  description_ar text,
-  description_en text,
-  category text not null,
-  tags text[] default '{}',
-  thumbnail_url text,
-  images text[] default '{}',
-  live_url text,
-  github_url text,
-  featured boolean default false,
-  order_num integer default 0,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-alter table projects enable row level security;
-
-create policy "Public read"
-on projects for select to anon
-using (true);
-
-create policy "Service role full access"
-on projects for all to service_role
-using (true);
-```
+Create the tables by applying the SQL files in `supabase/migrations/`, in name order (see below). `0000_baseline.sql` creates the `projects` table; `0002_rebuild.sql` brings it to the current model and limits public reads to published projects with a GitHub link.
 
 Create a public Storage bucket named `projects`.
 

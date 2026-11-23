@@ -1,3 +1,5 @@
+// The service-role key bypasses row-level security: this module must never reach the browser.
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 

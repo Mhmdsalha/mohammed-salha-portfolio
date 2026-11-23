@@ -4,7 +4,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url))
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // Tests run outside React Server Components, where "server-only" would throw on import.
+      "server-only": fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url))
     }
   },
   // tsconfig keeps `jsx: preserve` for Next, so tests need their own JSX transform (React 19

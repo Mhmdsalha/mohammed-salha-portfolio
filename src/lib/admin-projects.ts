@@ -1,3 +1,4 @@
+import "server-only";
 import { mockProjects } from "@/data/mock-projects";
 import { requireAdminPage } from "@/lib/auth/guard";
 import { DataError, PROJECT_COLUMNS, asProject } from "@/lib/projects";

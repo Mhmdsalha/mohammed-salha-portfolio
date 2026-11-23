@@ -1,5 +1,6 @@
 import { mockProjects } from "@/data/mock-projects";
 import { connection } from "next/server";
+import { cache } from "react";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
@@ -95,8 +96,11 @@ export async function getFeatured(): Promise<Project[]> {
   return data.map(asProject);
 }
 
-/** One public project, or undefined when no public project has this slug. */
-export async function getProjectBySlug(slug: string): Promise<Project | undefined> {
+/**
+ * One public project, or undefined when no public project has this slug. Wrapped in React's
+ * cache(), so a page and its generateMetadata share one query per request.
+ */
+export const getProjectBySlug = cache(async (slug: string): Promise<Project | undefined> => {
   await connection();
   if (!hasSupabaseEnv()) {
     return withoutDatabase("the project", () =>
@@ -113,7 +117,7 @@ export async function getProjectBySlug(slug: string): Promise<Project | undefine
 
   if (error) throw new DataError("the project", error);
   return data ? asProject(data) : undefined;
-}
+});
 
 /** Skills in tab order, each with the slugs of the public projects that use it. */
 export async function getSkills(): Promise<Skill[]> {

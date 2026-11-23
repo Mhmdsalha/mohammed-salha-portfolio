@@ -64,14 +64,14 @@ Phases 1, 2 and 3 start together once `P0-1` is merged. **No data ticket starts 
 
 ## Phase 5 — Dashboard (A5)
 
-| ID   | Ticket                                                                                                      | Agent | Depends on | Acceptance criteria                                                      | Risks   | Status |
-| ---- | ----------------------------------------------------------------------------------------------------------- | ----- | ---------- | ------------------------------------------------------------------------ | ------- | ------ |
-| D5-1 | Projects table: search, published/featured toggles, drag-to-reorder `order_num` and `featured_order`        | A5    | D1-2       | Reorder persists after reload; optimistic UI rolls back on error         | R14     | todo   |
-| D5-2 | Project form: AR/EN tabs, label, highlights, skills multi-select, GitHub URL required, slug auto + editable | A5    | D1-2       | Zod errors next to each field in both languages; unsaved-changes warning | R9      | todo   |
-| D5-3 | Image manager: drag-and-drop, preview, reorder, set cover, delete; per-file progress                        | A5    | D1-3       | 6 × 5 MB upload succeeds on slow 3G                                      | R10     | todo   |
-| D5-4 | Skills manager: CRUD + category + order                                                                     | A5    | D1-2       | Changes appear in the public Skills tabs                                 | R7      | todo   |
-| D5-5 | Settings: contact links (validated URLs/phone), CV upload (PDF only, 5 MB) served at `/cv.pdf`              | A5    | D1-3       | Header CV button downloads the current file                              | R7      | todo   |
-| D5-6 | Dashboard polish: empty states, toasts, confirm dialogs, shortcuts, RTL-correct layout                      | A5    | D5-1       | axe-core zero serious issues on every dashboard page                     | R2, R14 | todo   |
+| ID   | Ticket                                                                                                      | Agent | Depends on | Acceptance criteria                                                                                                                | Risks   | Status |
+| ---- | ----------------------------------------------------------------------------------------------------------- | ----- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------- | ------ |
+| D5-1 | Projects table: search, published/featured toggles, drag-to-reorder `order_num` and `featured_order`        | A5    | D1-2       | Reorder persists after reload; optimistic UI rolls back on error                                                                   | R14     | todo   |
+| D5-2 | Project form: AR/EN tabs, label, highlights, skills multi-select, GitHub URL required, slug auto + editable | A5    | D1-2       | Zod errors next to each field in both languages; unsaved-changes warning                                                           | R9      | todo   |
+| D5-3 | Image manager: drag-and-drop, preview, reorder, set cover, delete; per-file progress                        | A5    | D1-3       | 6 × 5 MB upload succeeds on slow 3G                                                                                                | R10     | todo   |
+| D5-4 | Skills manager: CRUD + category + order                                                                     | A5    | D1-2       | Changes appear in the public Skills tabs                                                                                           | R7      | todo   |
+| D5-5 | Settings: contact links (validated URLs/phone), CV upload (PDF only, 5 MB) served at `/cv.pdf`              | A5    | D1-3       | Header CV button downloads the current file; `getSiteSettings()` throws on Storage/DB errors instead of returning defaults (D-028) | R7      | todo   |
+| D5-6 | Dashboard polish: empty states, toasts, confirm dialogs, shortcuts, RTL-correct layout                      | A5    | D5-1       | axe-core zero serious issues on every dashboard page                                                                               | R2, R14 | todo   |
 
 ## Phase 6 — Launch
 
