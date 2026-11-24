@@ -349,7 +349,11 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - Unit: 14 tests in `tests/unit/seo.test.ts`.
   - E2E: `e2e/seo.spec.ts` (7 tests on the served HTML: absolute URLs, one canonical, `og:url` equal to it; robots, sitemap, icons and cards; noindex pages without `og:url`). It passes with the locale, security and hero suites.
   - Lighthouse SEO: 100 on `/ar` and `/en`. Best practices: 96, from the Speed Insights script that only exists on Vercel.
-  - **Not yet done:** Google's Rich Results Test and the Facebook/LinkedIn share debuggers need a public URL. They run on production right after merge; the layout's tags go live with the current home page.
+  - **On production (2026-11-23, after merge):**
+    - Served from `https://mohammed-salha-portfolio.vercel.app`: canonical, hreflang, `og:url` and `og:image` are absolute on the production domain; `robots.txt` names the production sitemap; the sitemap lists 10 URLs (no Salla, no mock data); the icons, both cards and the portrait return 200.
+    - Google Rich Results Test: `/ar` has 1 valid Profile page, and `/en/projects/arzaq-marketplace` has 1 valid Breadcrumbs item, with no warnings.
+    - Open Graph: Facebook's Sharing Debugger and LinkedIn's Post Inspector need a sign-in, so opengraph.xyz was used instead. On `/ar` it found 0 errors, 11 passes and 2 warnings: the image has no call-to-action (a marketing suggestion, ignored), and the 134-character description may be cut on mobile previews (accepted; search shows it whole). The Facebook preview shows the Arabic card correctly.
+    - Still open for the owner: a first share on Facebook or LinkedIn from a signed-in account.
 - **Budget:** the two cards add 122 KB to `public/`. After P4-10 removes the old avatar and fonts, `public/` is about 170 KB, under the 300 KB criterion.
 
 ## D-028 Data model rebuild and typed data API (D1-2) — Accepted (2026-11-23)
