@@ -58,8 +58,9 @@ const projects = [
     thumbnail_url: null,
     images: [],
     live_url: "https://arzaq-ps.vercel.app/",
-    github_url: null,
-    featured: false,
+    github_url: "https://github.com/Mhmdsalha/arzaq",
+    label: "training",
+    featured: true,
     order_num: 5
   },
   {
@@ -70,20 +71,23 @@ const projects = [
       "نظام نقاط بيع عربي للمتاجر، يركز على سرعة الكاشير، وضوح المنتجات، وإدارة عمليات البيع اليومية.",
     description_en:
       "An Arabic-first POS system concept focused on fast checkout, retail clarity, product operations, and dashboard-style workflows.",
-    category: "pos",
+    category: "system",
     tags: ["Next.js", "TypeScript", "Dashboard", "POS", "RTL"],
     thumbnail_url: null,
     images: [],
     live_url: "https://saree3pos.vercel.app/",
-    github_url: null,
+    github_url: "https://github.com/Mhmdsalha/saree3-pos-project",
+    label: "training",
     featured: false,
     order_num: 6
   }
 ];
 
+// Adds missing projects only: an existing row (and everything edited in the dashboard, such as
+// thumbnails, links and order) is never overwritten (A7 review, D-028).
 const { data, error } = await supabase
   .from("projects")
-  .upsert(projects, { onConflict: "slug" })
+  .upsert(projects, { onConflict: "slug", ignoreDuplicates: true })
   .select("id, slug, title_en, live_url");
 
 if (error) {

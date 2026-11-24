@@ -31,9 +31,7 @@ export function parseAttemptCounts(data: unknown): AttemptCounts {
  * (supabase/migrations/0001_login_attempts.sql). A missing table or function makes PostgREST
  * return an error, which `register` rethrows, so login fails closed.
  */
-export function createSupabaseAttemptStore(
-  client: RpcClient = createAdminClient() as unknown as RpcClient
-): AttemptStore {
+export function createSupabaseAttemptStore(client: RpcClient = createAdminClient()): AttemptStore {
   return {
     async register(keyHash, { windowSeconds, maxPerKey }) {
       const { data, error } = await client.rpc("register_login_attempt", {

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PROJECT_CATEGORIES } from "@/types";
 
 const projectSchema = z.object({
   title_en: z.string().min(2),
@@ -12,7 +13,7 @@ const projectSchema = z.object({
     .string()
     .min(2)
     .regex(/^[a-z0-9-]+$/),
-  category: z.enum(["salla", "webapp", "pos", "other"]),
+  category: z.enum(PROJECT_CATEGORIES),
   description_en: z.string().optional(),
   description_ar: z.string().optional(),
   live_url: z.string().url().optional().or(z.literal("")),

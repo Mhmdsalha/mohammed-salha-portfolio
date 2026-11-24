@@ -17,7 +17,12 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     live_url: null,
     github_url: null,
     featured: false,
+    featured_order: null,
     order_num: 0,
+    label: null,
+    highlights_ar: [],
+    highlights_en: [],
+    published: true,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides

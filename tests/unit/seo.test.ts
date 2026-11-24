@@ -145,15 +145,13 @@ describe("JSON-LD", () => {
 
 describe("sitemap.xml", () => {
   it("lists home and every public project in both locales, with hreflang and lastmod", async () => {
+    // getProjects returns public projects only (row-level security, D-004).
     getProjects.mockResolvedValue([
       project("arzaq", "webapp", "2026-07-19T18:10:59.849855+00:00"),
-      project("lamsa", "salla", "2026-08-01T00:00:00+00:00"),
-      project("saree3", "pos", "2026-06-01T00:00:00+00:00")
+      project("saree3", "system", "2026-06-01T00:00:00+00:00")
     ]);
     const entries = await sitemap();
 
-    // Real data only: a database failure must not publish the mock projects (A7 review).
-    expect(getProjects).toHaveBeenCalledWith({ fallbackToMock: false });
     expect(entries.map((entry) => entry.url)).toEqual([
       "http://localhost:3000/ar",
       "http://localhost:3000/en",
@@ -162,7 +160,7 @@ describe("sitemap.xml", () => {
       "http://localhost:3000/ar/projects/saree3",
       "http://localhost:3000/en/projects/saree3"
     ]);
-    // Home takes the newest public project's date; the Salla row does not count.
+    // Home takes the newest project's date.
     expect(entries[0]?.lastModified).toBe("2026-07-19T18:10:59.849855+00:00");
     for (const entry of entries) {
       expect(Object.keys(entry.alternates?.languages ?? {}).sort()).toEqual([
@@ -173,8 +171,8 @@ describe("sitemap.xml", () => {
     }
   });
 
-  it("lists only the home pages when there are no projects", async () => {
-    getProjects.mockResolvedValue([]);
+  it("lists only the home pages when the database fails (never mock data)", async () => {
+    getProjects.mockRejectedValue(new Error("database down"));
     expect((await sitemap()).map((entry) => entry.url)).toEqual([
       "http://localhost:3000/ar",
       "http://localhost:3000/en"

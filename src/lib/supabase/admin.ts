@@ -1,34 +1,7 @@
+// The service-role key bypasses row-level security: this module must never reach the browser.
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import { Project } from "@/types";
-
-type ProjectInsert = Omit<Project, "id" | "created_at" | "updated_at"> & {
-  id?: string;
-  created_at?: string;
-  updated_at?: string;
-};
-
-type Database = {
-  public: {
-    Tables: {
-      projects: {
-        Row: Project;
-        Insert: ProjectInsert;
-        Update: Partial<ProjectInsert>;
-        Relationships: [];
-      };
-      login_attempts: {
-        Row: { id: number; key_hash: string; attempted_at: string };
-        Insert: { key_hash: string; attempted_at?: string };
-        Update: { key_hash?: string; attempted_at?: string };
-        Relationships: [];
-      };
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-};
+import type { Database } from "@/types/database";
 
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

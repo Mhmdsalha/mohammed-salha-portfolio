@@ -9,7 +9,7 @@ import { z } from "zod";
 import { createProject, updateProject, uploadProjectImages } from "@/actions/projects";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ImageUploader } from "@/components/dashboard/ImageUploader";
-import { Project, ProjectFormValues } from "@/types";
+import { PROJECT_CATEGORIES, Project, ProjectFormValues } from "@/types";
 
 const schema = z.object({
   title_en: z.string().min(2, "English title is required."),
@@ -18,7 +18,7 @@ const schema = z.object({
     .string()
     .min(2)
     .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens."),
-  category: z.enum(["salla", "webapp", "pos", "other"]),
+  category: z.enum(PROJECT_CATEGORIES),
   description_en: z.string(),
   description_ar: z.string(),
   live_url: z.string().url("Enter a valid URL.").or(z.literal("")),
@@ -43,7 +43,7 @@ function projectToDefaults(project?: Project): ProjectFormValues {
     title_en: project?.title_en ?? "",
     title_ar: project?.title_ar ?? "",
     slug: project?.slug ?? "",
-    category: project?.category ?? "salla",
+    category: project?.category ?? "webapp",
     description_en: project?.description_en ?? "",
     description_ar: project?.description_ar ?? "",
     live_url: project?.live_url ?? "",
@@ -160,10 +160,10 @@ export function ProjectForm({ project }: { project?: Project }) {
           </Field>
           <Field label="Category" error={errors.category?.message}>
             <select {...register("category")} className="field">
-              <option value="salla">Salla</option>
               <option value="webapp">Web App</option>
-              <option value="pos">POS</option>
-              <option value="other">Other</option>
+              <option value="system">System</option>
+              <option value="platform">Platform</option>
+              <option value="store">Store</option>
             </select>
           </Field>
         </div>
