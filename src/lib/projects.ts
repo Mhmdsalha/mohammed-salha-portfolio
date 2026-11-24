@@ -1,7 +1,9 @@
 import { mockProjects } from "@/data/mock-projects";
-import { connection } from "next/server";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
+import { CACHE_REVALIDATE_SECONDS, CACHE_TAGS, type CacheTag } from "@/lib/cache-tags";
 import { hasSupabaseEnv } from "@/lib/env";
+import { mockDataAllowed } from "@/lib/mock-data";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
   PROJECT_CATEGORIES,
@@ -17,10 +19,11 @@ import type { Tables } from "@/types/database";
 //  * A database error throws (DataError). It never falls back to mock data: an outage shows the
 //    error page instead of fake projects.
 //  * Mock data is used only when no Supabase env is set at all (local development, CI builds),
-//    and never in a Vercel deployment.
-// Caching and tags come with D1-4 (D-008). Until then each read calls connection(), so every
-// page that shows data renders per request, with or without a database, and edits show at once.
-//
+//    and Vercel previews without database env; never in production (src/lib/mock-data.ts).
+//  * Every database read is cached with a tag (D1-4, D-008, D-029): pages are served from the
+//    cache, and each dashboard change revalidates its tag, so the next request shows the edit.
+//    The anon client sends no cookies, which a cached function must not read (R18). A thrown
+//    error is never cached.
 
 export class DataError extends Error {
   constructor(what: string, cause?: unknown) {
@@ -51,7 +54,7 @@ export function asProject(row: Tables<"projects">): Project {
 }
 
 function withoutDatabase<T>(what: string, fallback: () => T): T {
-  if (process.env.VERCEL) {
+  if (!mockDataAllowed()) {
     throw new DataError(what, new Error("The Supabase environment variables are not set."));
   }
   return fallback();
@@ -59,11 +62,17 @@ function withoutDatabase<T>(what: string, fallback: () => T): T {
 
 const isPublic = (project: Project) => project.published && project.github_url !== null;
 
-/** Public projects in archive order. */
-export async function getProjects(): Promise<Project[]> {
-  await connection();
-  if (!hasSupabaseEnv()) return withoutDatabase("projects", () => mockProjects.filter(isPublic));
+/** Caches a database read under the given tags (see src/lib/cache-tags.ts). */
+function cachedRead<A extends unknown[], R>(
+  key: string,
+  tags: CacheTag[],
+  read: (...args: A) => Promise<R>
+): (...args: A) => Promise<R> {
+  // The arguments are part of the cache key, next to `key`.
+  return unstable_cache(read, ["data", key], { tags, revalidate: CACHE_REVALIDATE_SECONDS });
+}
 
+const readProjects = cachedRead("projects", [CACHE_TAGS.projects], async () => {
   const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("projects")
@@ -73,17 +82,9 @@ export async function getProjects(): Promise<Project[]> {
 
   if (error) throw new DataError("projects", error);
   return data.map(asProject);
-}
+});
 
-/** Public featured projects in carousel order (`featured_order`, then archive order). */
-export async function getFeatured(): Promise<Project[]> {
-  await connection();
-  if (!hasSupabaseEnv()) {
-    return withoutDatabase("featured projects", () =>
-      mockProjects.filter((project) => isPublic(project) && project.featured)
-    );
-  }
-
+const readFeatured = cachedRead("featured", [CACHE_TAGS.projects], async () => {
   const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("projects")
@@ -94,36 +95,27 @@ export async function getFeatured(): Promise<Project[]> {
 
   if (error) throw new DataError("featured projects", error);
   return data.map(asProject);
-}
-
-/**
- * One public project, or undefined when no public project has this slug. Wrapped in React's
- * cache(), so a page and its generateMetadata share one query per request.
- */
-export const getProjectBySlug = cache(async (slug: string): Promise<Project | undefined> => {
-  await connection();
-  if (!hasSupabaseEnv()) {
-    return withoutDatabase("the project", () =>
-      mockProjects.find((project) => isPublic(project) && project.slug === slug)
-    );
-  }
-
-  const supabase = await createPublicClient();
-  const { data, error } = await supabase
-    .from("projects")
-    .select(PROJECT_COLUMNS)
-    .eq("slug", slug)
-    .maybeSingle();
-
-  if (error) throw new DataError("the project", error);
-  return data ? asProject(data) : undefined;
 });
 
-/** Skills in tab order, each with the slugs of the public projects that use it. */
-export async function getSkills(): Promise<Skill[]> {
-  await connection();
-  if (!hasSupabaseEnv()) return withoutDatabase("skills", () => []);
+// null, not undefined, for "no such project": the cache stores JSON.
+const readProjectBySlug = cachedRead(
+  "project-by-slug",
+  [CACHE_TAGS.projects],
+  async (slug: string): Promise<Project | null> => {
+    const supabase = await createPublicClient();
+    const { data, error } = await supabase
+      .from("projects")
+      .select(PROJECT_COLUMNS)
+      .eq("slug", slug)
+      .maybeSingle();
 
+    if (error) throw new DataError("the project", error);
+    return data ? asProject(data) : null;
+  }
+);
+
+// Skills embed their projects, so a project change revalidates them too.
+const readSkills = cachedRead("skills", [CACHE_TAGS.skills, CACHE_TAGS.projects], async () => {
   const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("skills")
@@ -132,7 +124,7 @@ export async function getSkills(): Promise<Skill[]> {
     .order("order_num", { ascending: true });
 
   if (error) throw new DataError("skills", error);
-  return data.map(({ project_skills, category, ...skill }) => {
+  return data.map(({ project_skills, category, ...skill }): Skill => {
     if (!isOneOf(SKILL_CATEGORIES, category)) {
       throw new DataError(`skill "${skill.name}"`, new Error("unexpected category"));
     }
@@ -143,6 +135,41 @@ export async function getSkills(): Promise<Skill[]> {
       projectSlugs: project_skills.flatMap((link) => (link.projects ? [link.projects.slug] : []))
     };
   });
+});
+
+/** Public projects in archive order. */
+export async function getProjects(): Promise<Project[]> {
+  if (!hasSupabaseEnv()) return withoutDatabase("projects", () => mockProjects.filter(isPublic));
+  return readProjects();
+}
+
+/** Public featured projects in carousel order (`featured_order`, then archive order). */
+export async function getFeatured(): Promise<Project[]> {
+  if (!hasSupabaseEnv()) {
+    return withoutDatabase("featured projects", () =>
+      mockProjects.filter((project) => isPublic(project) && project.featured)
+    );
+  }
+  return readFeatured();
+}
+
+/**
+ * One public project, or undefined when no public project has this slug. Also wrapped in React's
+ * cache(), so a page and its generateMetadata share one lookup per request.
+ */
+export const getProjectBySlug = cache(async (slug: string): Promise<Project | undefined> => {
+  if (!hasSupabaseEnv()) {
+    return withoutDatabase("the project", () =>
+      mockProjects.find((project) => isPublic(project) && project.slug === slug)
+    );
+  }
+  return (await readProjectBySlug(slug)) ?? undefined;
+});
+
+/** Skills in tab order, each with the slugs of the public projects that use it. */
+export async function getSkills(): Promise<Skill[]> {
+  if (!hasSupabaseEnv()) return withoutDatabase("skills", () => []);
+  return readSkills();
 }
 
 export function getFeaturedProject(projects: Project[]) {

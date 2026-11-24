@@ -10,15 +10,26 @@ import { LivePreviewFrame } from "@/components/projects/LivePreviewFrame";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TagPill } from "@/components/ui/TagPill";
-import { getProjectBySlug, getProjectDescription, getProjectTitle } from "@/lib/projects";
+import { LOCALES } from "@/lib/i18n/locales";
+import {
+  getProjectBySlug,
+  getProjectDescription,
+  getProjects,
+  getProjectTitle
+} from "@/lib/projects";
 import { alternatesFor, clampDescription, defaultOgImage, socialMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/site-settings";
 import { breadcrumbJsonLd } from "@/lib/structured-data";
 import { Locale } from "@/types";
 
-// No generateStaticParams: project pages render per request until D1-4 adds tagged caching
-// (D-028). The old one ran at build time without a request, so on Vercel it silently fell back
-// to the mock projects' slugs.
+// Public projects are prerendered at build and refreshed through the "projects" cache tag (D1-4,
+// D-029). A project published later renders on its first request (dynamicParams defaults to
+// true). If the database cannot be read at build time the build fails (the home page needs it
+// too), and Vercel keeps serving the previous deployment.
+export async function generateStaticParams() {
+  const projects = await getProjects();
+  return LOCALES.flatMap((locale) => projects.map((project) => ({ locale, slug: project.slug })));
+}
 
 export async function generateMetadata({
   params

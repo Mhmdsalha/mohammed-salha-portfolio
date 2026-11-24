@@ -1,6 +1,7 @@
 import "server-only";
 import { mockProjects } from "@/data/mock-projects";
 import { requireAdminPage } from "@/lib/auth/guard";
+import { mockDataAllowed } from "@/lib/mock-data";
 import { DataError, PROJECT_COLUMNS, asProject } from "@/lib/projects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Project } from "@/types";
@@ -9,14 +10,14 @@ import type { Project } from "@/types";
 // (unpublished, or no GitHub link yet, like Lamsa and Lolo), which the anon key cannot read. So
 // these use the service-role client, and each one checks the admin session first, even though
 // the page already did (defence in depth). Errors throw; mock data only without Supabase env,
-// off Vercel.
+// never in production.
 
 function hasAdminEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 function withoutDatabase<T>(what: string, fallback: () => T): T {
-  if (process.env.VERCEL) {
+  if (!mockDataAllowed()) {
     throw new DataError(what, new Error("The Supabase admin environment variables are not set."));
   }
   return fallback();

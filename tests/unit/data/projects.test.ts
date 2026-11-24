@@ -29,13 +29,20 @@ function fakeClient(result: Result) {
 }
 
 const mocks = vi.hoisted(() => ({
+  // unstable_cache needs Next's incremental cache; here it records each read's key and tags and
+  // runs the read directly.
+  cachedReads: [] as Array<{ key: string[]; tags: string[]; revalidate: number | false }>,
   publicClient: vi.fn(),
   adminClient: vi.fn(),
   requireAdminPage: vi.fn()
 }));
 vi.mock("@/lib/supabase/public", () => ({ createPublicClient: mocks.publicClient }));
-// connection() opts a page into per-request rendering; outside a Next request it would throw.
-vi.mock("next/server", () => ({ connection: async () => undefined }));
+vi.mock("next/cache", () => ({
+  unstable_cache: <T>(read: T, key: string[], options: { tags: string[]; revalidate: number }) => {
+    mocks.cachedReads.push({ key, tags: options.tags, revalidate: options.revalidate });
+    return read;
+  }
+}));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.adminClient }));
 vi.mock("@/lib/auth/guard", () => ({ requireAdminPage: mocks.requireAdminPage }));
 
@@ -58,7 +65,7 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
-  vi.stubEnv("VERCEL", "");
+  vi.stubEnv("VERCEL_ENV", "");
   mocks.publicClient.mockReset();
   mocks.adminClient.mockReset();
   mocks.requireAdminPage.mockReset().mockResolvedValue({ sub: "admin" });
@@ -151,10 +158,23 @@ describe("without Supabase env", () => {
     expect(mocks.publicClient).not.toHaveBeenCalled();
   });
 
-  it("throws in a Vercel deployment instead of showing mock data", async () => {
-    vi.stubEnv("VERCEL", "1");
+  it("still works on a Vercel preview (mock data, behind Vercel login)", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect((await getProjects()).length).toBeGreaterThan(0);
+  });
+
+  it("throws in production instead of showing mock data", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("ALLOW_MOCK_DATA", "1"); // never overrides a Vercel production deployment
     await expect(getProjects()).rejects.toBeInstanceOf(DataError);
     await expect(getAllProjectsForAdmin()).rejects.toBeInstanceOf(DataError);
+  });
+
+  it("fails closed in any other production run (self-hosted, or Vercel env hidden)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    await expect(getProjects()).rejects.toBeInstanceOf(DataError);
+    vi.stubEnv("ALLOW_MOCK_DATA", "1"); // CI builds and local e2e opt in explicitly
+    expect((await getProjects()).length).toBeGreaterThan(0);
   });
 });
 
@@ -183,5 +203,25 @@ describe("dashboard reads", () => {
     await expect(getProjectForAdmin("6f1c2d3e-4a5b-4c6d-8e9f-0a1b2c3d4e5f")).rejects.toBeInstanceOf(
       DataError
     );
+  });
+});
+
+describe("caching (D1-4)", () => {
+  it("caches every public read under the tags a dashboard change revalidates", () => {
+    const tagsByKey = Object.fromEntries(
+      mocks.cachedReads.map((read) => [read.key.join(":"), read.tags])
+    );
+    expect(tagsByKey).toEqual({
+      "data:projects": ["projects"],
+      "data:featured": ["projects"],
+      "data:project-by-slug": ["projects"],
+      "data:skills": ["skills", "projects"]
+    });
+    expect(mocks.cachedReads.every((read) => read.revalidate === 3600)).toBe(true);
+  });
+
+  it("returns undefined (not null) for an unknown slug, though the cache stores null", async () => {
+    usePublic({ data: null, error: null });
+    expect(await getProjectBySlug("nope")).toBeUndefined();
   });
 });
