@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { ImagePlus, X } from "lucide-react";
+import { ACCEPTED_IMAGE_MIME } from "@/lib/images/rules";
 
 type ImageUploaderProps = {
   thumbnailUrl: string;
@@ -39,7 +40,7 @@ export function ImageUploader({
         <label className="mt-2 block cursor-pointer rounded-2xl border border-dashed border-[var(--border-neon)] bg-[rgba(0,245,255,0.04)] p-4 transition hover:bg-[rgba(0,245,255,0.07)]">
           <input
             type="file"
-            accept="image/*"
+            accept={ACCEPTED_IMAGE_MIME}
             className="sr-only"
             onChange={(event) => onThumbnailChange(event.target.files?.[0] ?? null)}
           />
@@ -79,7 +80,7 @@ export function ImageUploader({
         <label className="mt-2 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-white/[0.025] p-4 text-center transition hover:border-[var(--border-neon)]">
           <input
             type="file"
-            accept="image/*"
+            accept={ACCEPTED_IMAGE_MIME}
             multiple
             className="sr-only"
             onChange={(event) => onGalleryChange(Array.from(event.target.files ?? []))}

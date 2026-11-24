@@ -4,6 +4,8 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/guard";
+import { ImageRejected, toSafeWebp } from "@/lib/images/process";
+import { MAX_UPLOAD_BYTES } from "@/lib/images/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PROJECT_CATEGORIES } from "@/types";
 
@@ -48,10 +50,12 @@ async function ensureProjectsBucket() {
 
   const exists = data.some((bucket) => bucket.name === storageBucket);
   if (!exists) {
+    // Only what toSafeWebp produces (D1-3). The existing production bucket keeps its settings;
+    // L-1 reviews its policies.
     const { error: createError } = await supabase.storage.createBucket(storageBucket, {
       public: true,
-      fileSizeLimit: 1024 * 1024 * 6,
-      allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"]
+      fileSizeLimit: MAX_UPLOAD_BYTES,
+      allowedMimeTypes: ["image/webp"]
     });
 
     if (createError) {
@@ -60,28 +64,19 @@ async function ensureProjectsBucket() {
   }
 }
 
-function getFileExtension(file: File) {
-  const fromName = file.name.split(".").pop()?.toLowerCase();
-  if (fromName && /^[a-z0-9]+$/.test(fromName)) {
-    return fromName;
-  }
-
-  return file.type.split("/").pop() ?? "bin";
-}
-
-async function uploadImageFile(file: File, slug: string, prefix: string) {
-  if (!file.type.startsWith("image/")) {
-    throw new Error(`${file.name} is not an image.`);
-  }
-
+/**
+ * Stores an already checked and re-encoded image under a random name (D1-3, D-030): the name
+ * reveals nothing and cannot be guessed, and `upsert: false` means an upload can never replace
+ * an existing file.
+ */
+async function storeWebp(webp: Buffer, slug: string, prefix: string) {
   const supabase = createAdminClient();
-  const extension = getFileExtension(file);
-  const bytes = await file.arrayBuffer();
-  const path = `projects/${slug}/${prefix}-${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const path = `projects/${slug}/${prefix}-${crypto.randomUUID()}.webp`;
 
-  const { error } = await supabase.storage.from(storageBucket).upload(path, bytes, {
-    contentType: file.type || "application/octet-stream",
-    upsert: true
+  const { error } = await supabase.storage.from(storageBucket).upload(path, webp, {
+    contentType: "image/webp",
+    cacheControl: "31536000",
+    upsert: false
   });
 
   if (error) {
@@ -106,19 +101,30 @@ export async function uploadProjectImages(formData: FormData) {
     return { success: false, message: "Missing Supabase credentials." };
   }
 
+  const thumbnail = formData.get("thumbnail");
+  const coverFile = thumbnail instanceof File && thumbnail.size > 0 ? thumbnail : null;
+  const imageFiles = formData
+    .getAll("images")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+
+  // Check and convert every file before storing any, so one bad file uploads nothing.
+  let cover: Buffer | null;
+  let gallery: Buffer[];
+  try {
+    cover = coverFile ? await toSafeWebp(coverFile) : null;
+    gallery = [];
+    for (const file of imageFiles) gallery.push(await toSafeWebp(file));
+  } catch (error) {
+    if (error instanceof ImageRejected) return { success: false, message: error.message };
+    throw error;
+  }
+
   try {
     await ensureProjectsBucket();
 
-    const thumbnail = formData.get("thumbnail");
-    const imageFiles = formData
-      .getAll("images")
-      .filter((value): value is File => value instanceof File && value.size > 0);
-    const thumbnailUrl =
-      thumbnail instanceof File && thumbnail.size > 0
-        ? await uploadImageFile(thumbnail, slug, "cover")
-        : null;
+    const thumbnailUrl = cover ? await storeWebp(cover, slug, "cover") : null;
     const imageUrls = await Promise.all(
-      imageFiles.map((file, index) => uploadImageFile(file, slug, `gallery-${index + 1}`))
+      gallery.map((webp, index) => storeWebp(webp, slug, `gallery-${index + 1}`))
     );
 
     return {

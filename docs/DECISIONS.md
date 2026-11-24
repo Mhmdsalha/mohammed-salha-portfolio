@@ -484,6 +484,35 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - **End to end, without production (A7 review):** a production build against a local mock of PostgREST and Storage. `revalidateTag("projects")` made the next request to `/ar`, `/en` and both project pages a MISS with the new data, and turned a hidden slug's cached 404 into a 200 that the sitemap listed. `revalidateTag("settings")` updated the email on both home pages.
   - **Not automated (R7's e2e):** the same through a real dashboard login on Vercel. Check it by hand on production after merge.
 
+## D-030 Upload hardening (D1-3) — Accepted (2026-11-25)
+
+- **Every upload is checked and re-encoded on the server** (`src/lib/images/process.ts`, `toSafeWebp`):
+  1. **Size:** at most 5 MB per file, checked before reading it as an image.
+  2. **Type by magic bytes** (`src/lib/images/sniff.ts`): PNG, JPEG, WebP or AVIF. The file name and the declared type are ignored.
+     - An SVG (text, can carry script), HTML, a GIF or a renamed executable is rejected.
+     - AVIF is recognised by its `ftyp` brands, so an MP4 is not taken for AVIF.
+     - The plan named the `file-type` package; four signatures are a few lines and need no dependency.
+  3. **Decode and re-encode to WebP with sharp:**
+     - Only a real, decodable image survives: a valid header with garbage behind it is rejected.
+     - Metadata (EXIF, GPS, XMP) is dropped after the orientation is applied.
+     - Images are scaled down to 2400 px on the long side, never up.
+     - A 50-megapixel input limit stops decompression bombs.
+     - `sharp` is now a direct dependency (it was only Next's optional one). Next loads it as an external module on the server; it is not in any browser bundle.
+- **All or nothing:** every file in a request is checked and converted before any is stored, so one bad file uploads nothing.
+- **Storage:**
+  - Paths are `projects/{slug}/{cover|gallery-n}-{random UUID}.webp`. The original name never reaches Storage.
+  - `upsert: false` means an upload can never replace an existing file.
+  - `contentType` is `image/webp`, with a one-year cache (names never repeat).
+  - A newly created bucket would accept only `image/webp` up to 5 MB. The existing production bucket keeps its settings; L-1 reviews bucket policies.
+- **Form** (R10, in part):
+  - The file pickers accept only the four types.
+  - Before uploading, the form checks each file (5 MB, type) and the request total (7.5 MB, under the 8 MB server-action limit). It names the problem in a toast.
+  - A request rejected for its size now shows a message instead of failing silently.
+  - One file per request with per-file progress is D5-3.
+- **Tests** (16):
+  - `tests/unit/images/images.test.ts` uses real images generated with sharp and hand-built hostile files. It covers sniffing of all four formats and the rejected types, conversion to WebP, EXIF removal, downscaling, the broken image, the size limit and the form's checks.
+  - `tests/unit/images/upload-action.test.ts` calls the real server action. An SVG named `.png` and a renamed `.exe` are rejected and nothing reaches Storage; one bad file among good ones stores nothing; a good image is stored as WebP under a random name with `upsert: false`, even when its name is `../../evil name.png`.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).

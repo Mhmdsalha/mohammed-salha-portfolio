@@ -9,6 +9,7 @@ import { z } from "zod";
 import { createProject, updateProject, uploadProjectImages } from "@/actions/projects";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ImageUploader } from "@/components/dashboard/ImageUploader";
+import { checkFilesBeforeUpload } from "@/lib/images/rules";
 import { PROJECT_CATEGORIES, Project, ProjectFormValues } from "@/types";
 
 const schema = z.object({
@@ -107,6 +108,16 @@ export function ProjectForm({ project }: { project?: Project }) {
       let payload = values;
 
       if (thumbnailFile || galleryFiles.length > 0) {
+        // Early, friendly check; the server enforces the same rules and more (D1-3, R10).
+        const problem = checkFilesBeforeUpload([
+          ...(thumbnailFile ? [thumbnailFile] : []),
+          ...galleryFiles
+        ]);
+        if (problem) {
+          toast.error(problem);
+          return;
+        }
+
         const formData = new FormData();
         formData.append("slug", values.slug);
 
@@ -118,7 +129,11 @@ export function ProjectForm({ project }: { project?: Project }) {
           formData.append("images", file);
         });
 
-        const uploadResult = await uploadProjectImages(formData);
+        // A request over the server-action body limit rejects before the action runs (R10).
+        const uploadResult = await uploadProjectImages(formData).catch(() => ({
+          success: false as const,
+          message: "The upload failed. Try fewer or smaller images at once."
+        }));
 
         if (!uploadResult.success) {
           toast.error(uploadResult.message);
