@@ -171,12 +171,9 @@ describe("sitemap.xml", () => {
     }
   });
 
-  it("lists only the home pages when the database fails (never mock data)", async () => {
+  it("fails when the database fails, so the last good sitemap stays cached (D-029)", async () => {
     getProjects.mockRejectedValue(new Error("database down"));
-    expect((await sitemap()).map((entry) => entry.url)).toEqual([
-      "http://localhost:3000/ar",
-      "http://localhost:3000/en"
-    ]);
+    await expect(sitemap()).rejects.toThrow("database down");
   });
 });
 

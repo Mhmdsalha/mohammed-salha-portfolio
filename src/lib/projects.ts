@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { CACHE_REVALIDATE_SECONDS, CACHE_TAGS, type CacheTag } from "@/lib/cache-tags";
 import { hasSupabaseEnv } from "@/lib/env";
+import { mockDataAllowed } from "@/lib/mock-data";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
   PROJECT_CATEGORIES,
@@ -18,7 +19,7 @@ import type { Tables } from "@/types/database";
 //  * A database error throws (DataError). It never falls back to mock data: an outage shows the
 //    error page instead of fake projects.
 //  * Mock data is used only when no Supabase env is set at all (local development, CI builds),
-//    and Vercel preview deployments without database env; never in production (D-029).
+//    and Vercel previews without database env; never in production (src/lib/mock-data.ts).
 //  * Every database read is cached with a tag (D1-4, D-008, D-029): pages are served from the
 //    cache, and each dashboard change revalidates its tag, so the next request shows the edit.
 //    The anon client sends no cookies, which a cached function must not read (R18). A thrown
@@ -53,10 +54,7 @@ export function asProject(row: Tables<"projects">): Project {
 }
 
 function withoutDatabase<T>(what: string, fallback: () => T): T {
-  // Production must never show mock data. A preview without database env may: it is behind
-  // Vercel login, blocked by robots.txt, and pages are prerendered at build (D1-4), so throwing
-  // there would fail the preview build.
-  if (process.env.VERCEL_ENV === "production") {
+  if (!mockDataAllowed()) {
     throw new DataError(what, new Error("The Supabase environment variables are not set."));
   }
   return fallback();

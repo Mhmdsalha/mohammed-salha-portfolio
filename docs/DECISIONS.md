@@ -451,28 +451,38 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - `src/lib/site-settings.ts`: the settings, under `settings`.
   - The tags live in `src/lib/cache-tags.ts`.
   - The anon client sends no cookies, so nothing request-specific is read inside a cached function (R18).
-  - A thrown error is never cached. A failed settings read falls back to the defaults for that request only.
+  - A thrown error is never cached.
+  - **Under page-level caching, a "fallback" is cached too (A7 review).** A page rendered with fallback data stays cached for an hour. So failures throw rather than fall back: a page being regenerated keeps its last good version, and only a page that was never cached shows the error page (500).
+    - Settings: a missing settings file (Storage `statusCode: "404"`) is the real state, so the defaults are returned and cached. Any other Storage failure throws. The first version fell back to empty defaults, and ISR then cached `/ar` without contact links for an hour.
+    - Sitemap: a database error throws. The first version listed only the home pages, and that was cached for an hour.
   - The cache stores JSON, so "no such project" is cached as `null` and returned as `undefined`.
   - The `connection()` calls from D1-2 are gone.
 - **Pages are prerendered and tagged.** Next adds the tags of the cached reads a page uses to that page's cache entry (`unstable-cache.js`: `workUnitStore.tags`). The build output shows:
   - `/ar`, `/en` and every public project page in both languages: SSG, revalidate 1 h, tags `projects,settings`;
   - the sitemap: revalidate 1 h, tag `projects`;
   - a hidden or unknown slug (e.g. Lamsa): a cached 404, also tagged `projects`, so it turns into the page as soon as the project is published.
-  - The project page has `generateStaticParams` again (dynamicParams stays true, so later projects render on their first request). If the database can't be read at build time, it prerenders nothing instead of failing the build.
+  - The project page has `generateStaticParams` again (dynamicParams stays true, so later projects render on their first request). If the database can't be read at build time, the build fails (the home page needs it as well), and Vercel keeps serving the previous deployment.
 - **Every dashboard change revalidates:**
   - create, update and delete project → `revalidateTag("projects")` (`revalidatePath` only for the dashboard lists);
   - save settings → `revalidateTag("settings")`.
   - The old `revalidatePath("/")` only refreshed `/`, which redirects; it never refreshed `/ar` or `/en`.
   - Skills are edited from D5-4, which must revalidate `skills`.
-- **Mock data on previews:** the first preview build of this PR failed. Pages are now prerendered at build, and the preview environment has no Supabase variables, so D-028's "throw on Vercel without env" stopped the build. The throw is now limited to `VERCEL_ENV=production`.
-  - A preview without database env builds with the mock projects. It is behind Vercel login and blocked by robots.txt.
-  - A production build without env still fails at once rather than ship fake projects (checked locally both ways).
+- **When mock data may stand in** (`src/lib/mock-data.ts`, fail closed): the first preview build of this PR failed. Pages are now prerendered at build, and the preview environment has no Supabase variables, so D-028's "throw on Vercel without env" stopped the build. Mock data is now allowed only:
+  - on a Vercel preview (behind Vercel login, blocked by robots.txt);
+  - in development and tests;
+  - when a production build or server is started with `ALLOW_MOCK_DATA=1` (CI sets it; so do local e2e runs without a database).
+  - Never when `VERCEL_ENV=production`, even with `ALLOW_MOCK_DATA`. Any other production run without env throws, including a self-hosted `next start` and Vercel with its system variables hidden. The A7 review found that the first version (throw only when `VERCEL_ENV=production`) failed open there.
+- **Unknown slugs fill the page cache (accepted risk, A7 review).** Each never-seen slug renders once and stores a cached 404, with one database query and one ISR write. Repeats are served from the cache.
+  - The suggested fix would check the slug against the cached list and call `connection()` before `notFound()`. That turns the 404 dynamic, but it would also break **un**publishing: a prerendered project page being regenerated would switch from static to dynamic, the regeneration would fail, and the old page would stay live.
+  - Before this PR every such request was a function invocation plus a query anyway; now repeats are cheaper.
+  - Revisit with Vercel's firewall or rate limiting if the ISR write usage ever grows (backlog).
 - **Safety net:** `revalidate: 3600` on every cached read, so changes made outside the dashboard (for example in the Supabase SQL editor) show within an hour.
 - **Checks:**
-  - unit: every read's key, tags and revalidate; each project and settings action revalidating its tag; a rejected change revalidating nothing;
+  - unit: every read's key, tags and revalidate (projects, skills and settings); each project and settings action revalidating its tag; a rejected change revalidating nothing; the settings 404 vs failure rule; the sitemap throwing; the mock-data guard in each environment;
   - a production build against the live database: `x-nextjs-cache: HIT` with `s-maxage=3600` on `/ar`, `/en` and a project page, and the tags in each page's cache entry;
   - the e2e suites: 30/30.
-  - **Not automated (R7's e2e):** editing a title in the dashboard and seeing it on `/ar`. Logging in and editing would write to the production database. Check it by hand on production after merge.
+  - **End to end, without production (A7 review):** a production build against a local mock of PostgREST and Storage. `revalidateTag("projects")` made the next request to `/ar`, `/en` and both project pages a MISS with the new data, and turned a hidden slug's cached 404 into a 200 that the sitemap listed. `revalidateTag("settings")` updated the email on both home pages.
+  - **Not automated (R7's e2e):** the same through a real dashboard login on Vercel. Check it by hand on production after merge.
 
 ## Backlog (not in scope until A0 schedules it)
 
@@ -480,3 +490,4 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 - Report the Windows `next-font-manifest.json` path bug upstream, or measure on Linux only (D-023).
 - Content-Security-Policy and security headers in `next.config.ts` (A1).
 - Slug redirects table if slugs ever change after publish (R9 alternative).
+- Watch Vercel ISR writes; if random project slugs ever drive them up, add a firewall or rate-limit rule (D-029).

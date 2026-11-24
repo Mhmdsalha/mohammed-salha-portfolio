@@ -1,6 +1,7 @@
 import "server-only";
 import { mockProjects } from "@/data/mock-projects";
 import { requireAdminPage } from "@/lib/auth/guard";
+import { mockDataAllowed } from "@/lib/mock-data";
 import { DataError, PROJECT_COLUMNS, asProject } from "@/lib/projects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Project } from "@/types";
@@ -16,7 +17,7 @@ function hasAdminEnv() {
 }
 
 function withoutDatabase<T>(what: string, fallback: () => T): T {
-  if (process.env.VERCEL_ENV === "production") {
+  if (!mockDataAllowed()) {
     throw new DataError(what, new Error("The Supabase admin environment variables are not set."));
   }
   return fallback();

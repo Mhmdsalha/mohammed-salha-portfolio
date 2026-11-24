@@ -24,10 +24,10 @@ import { Locale } from "@/types";
 
 // Public projects are prerendered at build and refreshed through the "projects" cache tag (D1-4,
 // D-029). A project published later renders on its first request (dynamicParams defaults to
-// true). If the database cannot be read at build time, nothing is prerendered and every page
-// renders on demand instead of failing the build.
+// true). If the database cannot be read at build time the build fails (the home page needs it
+// too), and Vercel keeps serving the previous deployment.
 export async function generateStaticParams() {
-  const projects = await getProjects().catch(() => []);
+  const projects = await getProjects();
   return LOCALES.flatMap((locale) => projects.map((project) => ({ locale, slug: project.slug })));
 }
 

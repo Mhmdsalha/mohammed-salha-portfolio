@@ -61,3 +61,5 @@ jobs:
           fi
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          # CI has no database: let the build use the mock projects (src/lib/mock-data.ts).
+          ALLOW_MOCK_DATA: "1"

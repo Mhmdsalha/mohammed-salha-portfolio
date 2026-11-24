@@ -165,8 +165,16 @@ describe("without Supabase env", () => {
 
   it("throws in production instead of showing mock data", async () => {
     vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("ALLOW_MOCK_DATA", "1"); // never overrides a Vercel production deployment
     await expect(getProjects()).rejects.toBeInstanceOf(DataError);
     await expect(getAllProjectsForAdmin()).rejects.toBeInstanceOf(DataError);
+  });
+
+  it("fails closed in any other production run (self-hosted, or Vercel env hidden)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    await expect(getProjects()).rejects.toBeInstanceOf(DataError);
+    vi.stubEnv("ALLOW_MOCK_DATA", "1"); // CI builds and local e2e opt in explicitly
+    expect((await getProjects()).length).toBeGreaterThan(0);
   });
 });
 
