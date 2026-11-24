@@ -369,7 +369,7 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     6. Public read is now `published and github_url is not null` for `anon` and `authenticated` (D-004, R17).
     7. `skills` and `project_skills` tables. Every skill is public; a project–skill link is public only when its project is, because the policy's subquery runs under the caller's row-level security.
     8. Write privileges on all three tables are revoked from `anon` and `authenticated`. Supabase grants them every privilege by default, so until now only row-level security stopped writes.
-    9. **Hand-made table:** the first run on production failed and changed nothing. The live table was set up by hand in the dashboard and may differ from `0000_baseline`, so the migration no longer assumes names:
+    9. **Hand-made table:** an early attempt to apply the migration did not reach the database (it was never run), so nothing changed. The live table was set up by hand in the dashboard and may differ from `0000_baseline`, so the migration no longer assumes names:
        - it drops every check constraint that mentions `category`, whatever its name, before remapping;
        - it drops every policy on `projects` for `anon`, `authenticated` or `public` (any command), whatever its name, before creating its one read policy. Writes go through the service role only;
        - the `updated_at` trigger function has a name of its own (`projects_touch_updated_at`), so an existing `set_updated_at()` is never replaced.
@@ -428,6 +428,16 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - `tests/unit/db/database-types.test.ts`: the generated types are current.
   - `tests/unit/data/projects.test.ts` (12): errors throw, the type narrowing, the slug query, featured order, skills, the env fallbacks, and the dashboard reads behind the admin check.
   - The e2e suites (seo, locale, security, hero) pass on a build without database env.
+  - **Applied on production on 2026-11-25** (SQL editor, file at commit `c89e80a`, 8131 bytes; "Success").
+    - Before running, read-only checks showed the live table matched `0000_baseline` exactly: the policies `Public read` and `Service role full access`, only the primary key and slug unique constraints, no triggers, no clashing functions.
+    - After: the service role reads 7 rows.
+      - Lamsa, Oud and Lolo are `store`; Saree3 is `system`.
+      - Arzaq, Saree3 and Oud have their GitHub links; Arzaq and Saree3 are `training`.
+      - Carousel order: Al-Amanah 1, Al-Nakhba 2, Oud 3, Arzaq 4.
+    - Anon reads 5 projects, and Lamsa and Lolo are hidden even when asked by slug. `skills` is readable and empty.
+    - The live site (old code) kept working: `/ar` and `/en` 200, Lamsa's page 404, sitemap 12 URLs.
+    - The new code built against production data: the pages return 200 and the hidden stores 404, the sitemap lists the 5 public projects, and the e2e suites pass (30/30).
+    - Not checked: the dashboard listing Lamsa and Lolo after login. It uses the service-role read shown above.
   - Checked by hand on a build pointed at an unreachable database: `/ar` and a project page return 500 with the localised error page (Arabic and English), and the sitemap lists only the two home pages.
 
 ## Backlog (not in scope until A0 schedules it)
