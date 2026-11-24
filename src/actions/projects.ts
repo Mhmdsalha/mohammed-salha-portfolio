@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -26,6 +27,16 @@ const projectSchema = z.object({
 });
 
 const storageBucket = "projects";
+
+/**
+ * After any project change: the public pages (home, project pages, sitemap) and skills, through
+ * their cache tags (D1-4, D-029), plus the dashboard lists.
+ */
+function revalidateProjects() {
+  revalidateTag(CACHE_TAGS.projects);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/projects");
+}
 
 async function ensureProjectsBucket() {
   const supabase = createAdminClient();
@@ -158,8 +169,7 @@ export async function createProject(data: unknown) {
     return { success: false, message: error.message };
   }
 
-  revalidatePath("/");
-  revalidatePath("/dashboard/projects");
+  revalidateProjects();
   return { success: true, message: "Project created." };
 }
 
@@ -204,8 +214,7 @@ export async function updateProject(id: string, data: unknown) {
     return { success: false, message: error.message };
   }
 
-  revalidatePath("/");
-  revalidatePath("/dashboard/projects");
+  revalidateProjects();
   return { success: true, message: "Project updated." };
 }
 
@@ -234,7 +243,6 @@ export async function deleteProject(id: string) {
     return { success: false, message: error.message };
   }
 
-  revalidatePath("/");
-  revalidatePath("/dashboard/projects");
+  revalidateProjects();
   return { success: true, message: "Project deleted." };
 }

@@ -29,13 +29,20 @@ function fakeClient(result: Result) {
 }
 
 const mocks = vi.hoisted(() => ({
+  // unstable_cache needs Next's incremental cache; here it records each read's key and tags and
+  // runs the read directly.
+  cachedReads: [] as Array<{ key: string[]; tags: string[]; revalidate: number | false }>,
   publicClient: vi.fn(),
   adminClient: vi.fn(),
   requireAdminPage: vi.fn()
 }));
 vi.mock("@/lib/supabase/public", () => ({ createPublicClient: mocks.publicClient }));
-// connection() opts a page into per-request rendering; outside a Next request it would throw.
-vi.mock("next/server", () => ({ connection: async () => undefined }));
+vi.mock("next/cache", () => ({
+  unstable_cache: <T>(read: T, key: string[], options: { tags: string[]; revalidate: number }) => {
+    mocks.cachedReads.push({ key, tags: options.tags, revalidate: options.revalidate });
+    return read;
+  }
+}));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.adminClient }));
 vi.mock("@/lib/auth/guard", () => ({ requireAdminPage: mocks.requireAdminPage }));
 
@@ -183,5 +190,25 @@ describe("dashboard reads", () => {
     await expect(getProjectForAdmin("6f1c2d3e-4a5b-4c6d-8e9f-0a1b2c3d4e5f")).rejects.toBeInstanceOf(
       DataError
     );
+  });
+});
+
+describe("caching (D1-4)", () => {
+  it("caches every public read under the tags a dashboard change revalidates", () => {
+    const tagsByKey = Object.fromEntries(
+      mocks.cachedReads.map((read) => [read.key.join(":"), read.tags])
+    );
+    expect(tagsByKey).toEqual({
+      "data:projects": ["projects"],
+      "data:featured": ["projects"],
+      "data:project-by-slug": ["projects"],
+      "data:skills": ["skills", "projects"]
+    });
+    expect(mocks.cachedReads.every((read) => read.revalidate === 3600)).toBe(true);
+  });
+
+  it("returns undefined (not null) for an unknown slug, though the cache stores null", async () => {
+    usePublic({ data: null, error: null });
+    expect(await getProjectBySlug("nope")).toBeUndefined();
   });
 });

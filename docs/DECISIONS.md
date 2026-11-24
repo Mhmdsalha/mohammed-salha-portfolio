@@ -444,6 +444,33 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     - Not checked: the dashboard listing Lamsa and Lolo after login. It uses the service-role read shown above.
   - Checked by hand on a build pointed at an unreachable database: `/ar` and a project page return 500 with the localised error page (Arabic and English), and the sitemap lists only the two home pages.
 
+## D-029 Tagged caching and revalidation (D1-4) — Accepted (2026-11-25)
+
+- **Every public read is cached** with `unstable_cache` (D-008):
+  - `src/lib/projects.ts`: projects, featured projects and project-by-slug under the `projects` tag; skills under `skills` **and** `projects`, because they embed project slugs.
+  - `src/lib/site-settings.ts`: the settings, under `settings`.
+  - The tags live in `src/lib/cache-tags.ts`.
+  - The anon client sends no cookies, so nothing request-specific is read inside a cached function (R18).
+  - A thrown error is never cached. A failed settings read falls back to the defaults for that request only.
+  - The cache stores JSON, so "no such project" is cached as `null` and returned as `undefined`.
+  - The `connection()` calls from D1-2 are gone.
+- **Pages are prerendered and tagged.** Next adds the tags of the cached reads a page uses to that page's cache entry (`unstable-cache.js`: `workUnitStore.tags`). The build output shows:
+  - `/ar`, `/en` and every public project page in both languages: SSG, revalidate 1 h, tags `projects,settings`;
+  - the sitemap: revalidate 1 h, tag `projects`;
+  - a hidden or unknown slug (e.g. Lamsa): a cached 404, also tagged `projects`, so it turns into the page as soon as the project is published.
+  - The project page has `generateStaticParams` again (dynamicParams stays true, so later projects render on their first request). If the database can't be read at build time, it prerenders nothing instead of failing the build.
+- **Every dashboard change revalidates:**
+  - create, update and delete project → `revalidateTag("projects")` (`revalidatePath` only for the dashboard lists);
+  - save settings → `revalidateTag("settings")`.
+  - The old `revalidatePath("/")` only refreshed `/`, which redirects; it never refreshed `/ar` or `/en`.
+  - Skills are edited from D5-4, which must revalidate `skills`.
+- **Safety net:** `revalidate: 3600` on every cached read, so changes made outside the dashboard (for example in the Supabase SQL editor) show within an hour.
+- **Checks:**
+  - unit: every read's key, tags and revalidate; each project and settings action revalidating its tag; a rejected change revalidating nothing;
+  - a production build against the live database: `x-nextjs-cache: HIT` with `s-maxage=3600` on `/ar`, `/en` and a project page, and the tags in each page's cache entry;
+  - the e2e suites: 30/30.
+  - **Not automated (R7's e2e):** editing a title in the dashboard and seeing it on `/ar`. Logging in and editing would write to the production database. Check it by hand on production after merge.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).

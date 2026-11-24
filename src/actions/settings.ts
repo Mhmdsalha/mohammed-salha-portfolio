@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/guard";
 import { saveSiteSettings } from "@/lib/site-settings";
@@ -56,9 +57,8 @@ export async function updateSiteSettings(data: unknown) {
 
   try {
     await saveSiteSettings(parsed.data);
-    revalidatePath("/");
-    revalidatePath("/ar");
-    revalidatePath("/en");
+    // Every public page that shows contact links (D1-4, D-029).
+    revalidateTag(CACHE_TAGS.settings);
     revalidatePath("/dashboard/settings");
 
     return { success: true, message: "Contact settings updated." };
