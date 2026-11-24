@@ -1,7 +1,7 @@
 import { Project } from "@/types";
 
 // Local development only, when no Supabase env is set (src/lib/projects.ts). Never used when the
-// database is configured, and never in a Vercel deployment (D-028).
+// database is configured, and never in production (D-028, D-029).
 const now = "2026-11-23T00:00:00.000Z";
 
 export const mockProjects: Project[] = [

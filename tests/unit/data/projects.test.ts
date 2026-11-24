@@ -65,7 +65,7 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
-  vi.stubEnv("VERCEL", "");
+  vi.stubEnv("VERCEL_ENV", "");
   mocks.publicClient.mockReset();
   mocks.adminClient.mockReset();
   mocks.requireAdminPage.mockReset().mockResolvedValue({ sub: "admin" });
@@ -158,8 +158,13 @@ describe("without Supabase env", () => {
     expect(mocks.publicClient).not.toHaveBeenCalled();
   });
 
-  it("throws in a Vercel deployment instead of showing mock data", async () => {
-    vi.stubEnv("VERCEL", "1");
+  it("still works on a Vercel preview (mock data, behind Vercel login)", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect((await getProjects()).length).toBeGreaterThan(0);
+  });
+
+  it("throws in production instead of showing mock data", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
     await expect(getProjects()).rejects.toBeInstanceOf(DataError);
     await expect(getAllProjectsForAdmin()).rejects.toBeInstanceOf(DataError);
   });

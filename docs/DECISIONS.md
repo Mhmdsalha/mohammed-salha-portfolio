@@ -464,6 +464,9 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - save settings → `revalidateTag("settings")`.
   - The old `revalidatePath("/")` only refreshed `/`, which redirects; it never refreshed `/ar` or `/en`.
   - Skills are edited from D5-4, which must revalidate `skills`.
+- **Mock data on previews:** the first preview build of this PR failed. Pages are now prerendered at build, and the preview environment has no Supabase variables, so D-028's "throw on Vercel without env" stopped the build. The throw is now limited to `VERCEL_ENV=production`.
+  - A preview without database env builds with the mock projects. It is behind Vercel login and blocked by robots.txt.
+  - A production build without env still fails at once rather than ship fake projects (checked locally both ways).
 - **Safety net:** `revalidate: 3600` on every cached read, so changes made outside the dashboard (for example in the Supabase SQL editor) show within an hour.
 - **Checks:**
   - unit: every read's key, tags and revalidate; each project and settings action revalidating its tag; a rejected change revalidating nothing;
