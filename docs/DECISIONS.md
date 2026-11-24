@@ -369,8 +369,12 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     6. Public read is now `published and github_url is not null` for `anon` and `authenticated` (D-004, R17).
     7. `skills` and `project_skills` tables. Every skill is public; a project–skill link is public only when its project is, because the policy's subquery runs under the caller's row-level security.
     8. Write privileges on all three tables are revoked from `anon` and `authenticated`. Supabase grants them every privilege by default, so until now only row-level security stopped writes.
-    9. **Guard:** policies are OR'd, so any other policy letting `anon` or `authenticated` read projects would keep hidden rows public. The migration raises an exception, and rolls everything back, if one exists (A7 review).
-    10. `lock_timeout` is 5 s, so a held lock fails the migration instead of queuing the site's reads behind it.
+    9. **Hand-made table:** the first run on production failed and changed nothing. The live table was set up by hand in the dashboard and may differ from `0000_baseline`, so the migration no longer assumes names:
+       - it drops every check constraint that mentions `category`, whatever its name, before remapping;
+       - it drops every policy on `projects` for `anon`, `authenticated` or `public` (any command), whatever its name, before creating its one read policy. Writes go through the service role only;
+       - the `updated_at` trigger function has a name of its own (`projects_touch_updated_at`), so an existing `set_updated_at()` is never replaced.
+    10. **Guard:** at the end, any public policy other than ours raises an exception and rolls everything back.
+    11. `lock_timeout` is 10 s, so a held lock fails the migration instead of queuing the site's reads behind it.
   - Re-running is safe but not a no-op: a project featured since the last run gets a `featured_order`. Hidden featured projects keep a carousel position; the public query skips them.
   - **Order of release:** apply `0002` in the Supabase SQL editor **before** merging the code.
     - The new code reads the new columns: before the migration, a preview of it returns 500 on pages that show data.
@@ -420,7 +424,7 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     - anon visibility: hidden, unpublished, no writes (permission denied despite the default grants), skill links;
     - duplicate slugs (R9);
     - re-runs and a fresh database;
-    - the guard refusing to run, with nothing changed, when another read policy exists.
+    - a hand-made table: a differently named category check, dashboard-style read and insert policies, and a clashing `set_updated_at()`.
   - `tests/unit/db/database-types.test.ts`: the generated types are current.
   - `tests/unit/data/projects.test.ts` (12): errors throw, the type narrowing, the slug query, featured order, skills, the env fallbacks, and the dashboard reads behind the admin check.
   - The e2e suites (seo, locale, security, hero) pass on a build without database env.

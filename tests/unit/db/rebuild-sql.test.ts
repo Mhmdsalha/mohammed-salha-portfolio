@@ -262,22 +262,55 @@ describe("re-running the migrations", () => {
     }
   });
 
-  it("refuses to run, changing nothing, if another policy would keep hidden rows readable", async () => {
+  it("copes with a hand-made table: other policies, a differently named check, a clashing function", async () => {
+    // What a table set up by hand in the Supabase dashboard can carry, beyond 0000_baseline.
     const other = new PGlite();
     try {
       await other.exec(SUPABASE_ROLES);
       await other.exec(baseline);
       await other.exec(`
         insert into public.projects (slug, title_ar, title_en, category)
-          values ('lamsa', 'x', 'x', 'salla');
-        create policy "Enable read access for all users" on public.projects for select using (true);`);
+          values ('lamsa', 'x', 'x', 'salla'), ('kept', 'x', 'x', 'pos');
+        update public.projects set github_url = 'https://github.com/x/kept' where slug = 'kept';
+        alter table public.projects add constraint projects_category_chk
+          check (category in ('salla', 'webapp', 'pos', 'other'));
+        create policy "Enable read access for all users" on public.projects for select using (true);
+        create policy "Enable insert for authenticated users only" on public.projects
+          for insert to authenticated with check (true);
+        create function public.set_updated_at() returns text language sql as $$ select 'x' $$;`);
       await other.exec(loginAttempts);
-      await expect(other.exec(rebuild)).rejects.toThrow(/Enable read access for all users/);
-      await other.exec("rollback");
-      const { rows: after } = await other.query<{ category: string }>(
-        "select category from public.projects"
+      await other.exec(rebuild);
+
+      const { rows: categories } = await other.query<{ slug: string; category: string }>(
+        "select slug, category from public.projects order by slug"
       );
-      expect(after).toEqual([{ category: "salla" }]);
+      expect(categories).toEqual([
+        { slug: "kept", category: "system" },
+        { slug: "lamsa", category: "store" }
+      ]);
+      const { rows: policies } = await other.query<{ policyname: string }>(
+        "select policyname from pg_policies where tablename = 'projects' order by policyname"
+      );
+      expect(policies.map((policy) => policy.policyname)).toEqual([
+        "Public read published projects",
+        "Service role full access"
+      ]);
+      const { rows: checks } = await other.query<{ conname: string }>(
+        "select conname from pg_constraint where conrelid = 'public.projects'::regclass and contype = 'c' order by 1"
+      );
+      expect(checks.map((check) => check.conname)).toEqual([
+        "projects_category_check",
+        "projects_label_check"
+      ]);
+      await other.exec("set role anon");
+      const { rows: visible } = await other.query<{ slug: string }>(
+        "select slug from public.projects"
+      );
+      await other.exec("reset role");
+      expect(visible).toEqual([{ slug: "kept" }]);
+      // The unrelated function is left alone.
+      const { rows: fn } = await other.query<{ v: string }>("select public.set_updated_at() as v");
+      expect(fn).toEqual([{ v: "x" }]);
     } finally {
       await other.close();
     }
