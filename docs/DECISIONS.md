@@ -532,25 +532,37 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 
 ## D-031 Storage clean-up on delete (D1-5) — Accepted (2026-11-26)
 
-- **Order:** `deleteProject` reads the project, deletes the **row first**, revalidates `projects`, then removes its files (`src/lib/images/cleanup.ts`).
+- **Order:** `deleteProject` reads the project, deletes the **row first** and revalidates `projects`. Then it reads every other project's image references, lists the project's folder and removes its files (`src/lib/images/cleanup.ts`).
   - The row is the source of truth: if it cannot be deleted, no file is touched.
+  - Reading the references after the delete means they no longer include the deleted project.
   - If the clean-up fails after the row is gone, the action still reports the deletion, with a warning that some images stayed in Storage, and logs the details.
   - An unknown id returns "Project not found." and changes nothing.
+  - If the function is stopped between the two steps, the files stay orphaned and no sweep finds them later. That is accepted: one admin, a rare event.
 - **What is removed** (`filesToRemove`):
-  - every file in `projects/{slug}/`, including uploads the project no longer references (an older cover, files left by a failed save, D-030);
+  - every file directly in `projects/{slug}/` (sub-folders are skipped), including uploads the project no longer references (an older cover, files left by a failed save, D-030);
   - any of the project's referenced images stored elsewhere in the bucket, for example under its old slug after a rename.
-  - A file another project still references is kept.
-  - Only URLs that point into this project's `projects` bucket count. A path containing `..` is ignored. External images (other hosts) are never touched.
+  - Storage `list` treats the prefix as a folder: the reviewer confirmed read-only on production that `projects/arz` lists nothing, so `arzaq` can never pick up `arzaq-2`.
+- **Keep broad, delete strict (A7 review):** keeping a file by mistake is harmless; deleting one by mistake is not.
+  - **What is kept** (`keptPathsFromUrl`): any file that another project's URL might point to. That covers any host (including a future custom domain), public, signed and transformed (`render/image`) URLs, any letter case, doubled slashes, and escapes that don't decode (the raw path is kept).
+  - **What a URL may delete** (`storagePathFromUrl`): only this Supabase project's own public URL form, with a clean path:
+    - at least `projects/{folder}/{file}`;
+    - no empty, `.` or `..` segment, including an encoded `%2e%2e`;
+    - an escape that doesn't decode deletes nothing and throws nothing.
+  - The first version recognised only one URL form when keeping, so a shared file referenced by a signed URL could have been deleted. And one malformed `%` in any row made every later clean-up fail.
+- **Paging:**
+  - The folder is listed and the references are read 1000 at a time, until a short page. Supabase caps both reads at 1000, and an incomplete keep list would be a wrong-delete risk.
 - **Known limits:**
   - Files stay in CDN caches for up to their one-year `max-age` (D-030).
-  - Files already orphaned under the folder of a project that still exists are not touched until that project is deleted. Production has one such file: an older Arzaq cover.
-- **Tests** (`tests/unit/images/cleanup.test.ts`, 7):
-  - URL-to-path parsing: other hosts, other buckets and `..` are ignored;
-  - the selection: the slug folder, an image under an old slug, a file shared with another project;
-  - the real action against a fake client that records each call:
-    - the order is read, delete row, list, remove;
-    - the files removed are the cover and the older orphan;
-    - nothing is removed if the row delete fails or the project does not exist;
+  - Files already orphaned in the folder of a project that still exists are not touched until that project is deleted. Production has five: Arzaq, Lamsa, Lolo, Oud and Saree3 each keep an older 2026-06-12 cover next to the one they use (read-only listing by the reviewer).
+  - A race between deleting one project and uploading for another under the same slug at the same moment could lose the upload. That needs two tabs at once, with one admin; accepted.
+- **Tests** (`tests/unit/images/cleanup.test.ts`, 12):
+  - **Strict parsing:** other hosts, a host-suffix trick, other buckets, `..`, `%2e%2e`, a trailing slash, the bucket root, a doubled slash and a broken escape all delete nothing.
+  - **Broad keeping:** public, transformed and signed URLs, an uppercase or `http` host, a custom domain and a doubled slash are all kept; a broken escape neither throws nor loses the file.
+  - **Selection:** the slug folder, an image under an old slug, and files shared through public and signed URLs.
+  - **The real action, against a fake client that records each call:**
+    - the order is read, delete row, read the others, list, remove; the list arguments are checked; sub-folders are skipped;
+    - a file another project uses is kept, and a 1001-file folder is listed in two pages;
+    - nothing is removed if the row delete fails or the project doesn't exist;
     - a failed clean-up reports success with a warning.
 
 ## Backlog (not in scope until A0 schedules it)
