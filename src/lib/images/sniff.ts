@@ -16,18 +16,17 @@ const AVIF_BRANDS = new Set(["avif", "avis"]);
 
 /**
  * AVIF is an ISO-BMFF file: it starts with an `ftyp` box (4-byte size, "ftyp", major brand,
- * minor version, compatible brands). The box size must be sane, and brands are only read
- * inside the box, so text that merely contains "ftypavif" is not taken for AVIF.
+ * minor version, compatible brands). The box size must be sane, and the **major** brand must be
+ * avif/avis: libvips derives the codec it reports from the major brand, so this keeps both gates
+ * in agreement (a file with another major brand that only lists avif is refused here, with the
+ * right message, instead of passing here and failing in decodedAs; A7 re-review). Text that
+ * merely contains "ftypavif" is not taken for AVIF.
  */
 function isAvif(bytes: Uint8Array): boolean {
   if (bytes.length < 16 || ascii(bytes, 4, 8) !== "ftyp") return false;
   const boxSize = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0);
   if (boxSize < 16 || boxSize > bytes.length || boxSize > 256 || boxSize % 4 !== 0) return false;
-  if (AVIF_BRANDS.has(ascii(bytes, 8, 12))) return true;
-  for (let offset = 16; offset + 4 <= boxSize; offset += 4) {
-    if (AVIF_BRANDS.has(ascii(bytes, offset, offset + 4))) return true;
-  }
-  return false;
+  return AVIF_BRANDS.has(ascii(bytes, 8, 12));
 }
 
 /** The accepted format the bytes are, or null. */

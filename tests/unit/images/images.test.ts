@@ -33,6 +33,14 @@ describe("sniffImageFormat", () => {
     expect(sniffImageFormat(new Uint8Array())).toBeNull();
   });
 
+  it("needs an AVIF major brand, so both gates agree (A7 re-review)", async () => {
+    const avif = new Uint8Array(await solid(4, 4).avif().toBuffer());
+    expect(sniffImageFormat(avif)).toBe("avif");
+    const mif1 = avif.slice();
+    mif1.set(new TextEncoder().encode("mif1"), 8); // avif only among the compatible brands
+    expect(sniffImageFormat(mif1)).toBeNull();
+  });
+
   it("does not take an MP4 (another ftyp file) for AVIF", () => {
     const mp4 = new Uint8Array(32);
     mp4.set([0, 0, 0, 24], 0);

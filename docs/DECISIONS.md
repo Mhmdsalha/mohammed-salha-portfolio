@@ -490,9 +490,9 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   1. **Size:** at most 4 MB per file, checked before reading it as an image.
   2. **Type by magic bytes** (`src/lib/images/sniff.ts`): PNG, JPEG, WebP or AVIF. The file name and the declared type are ignored.
      - An SVG (text, can carry script), HTML, a GIF or a renamed executable is rejected.
-     - AVIF needs a well-formed `ftyp` box: a size of 16–256 bytes, a multiple of 4, within the file. Brands are read only inside that box.
+     - AVIF needs a well-formed `ftyp` box: a size of 16–256 bytes, a multiple of 4, within the file, with `avif` or `avis` as its **major** brand. libvips reports the codec from the major brand, so this keeps the two gates in agreement. An AVIF whose major brand is `mif1` (rare) is refused with the right message, instead of passing here and failing later (A7 re-review).
      - The plan named the `file-type` package; four signatures are a few lines and need no dependency.
-  3. **What sharp decodes must be the sniffed format** (`decodedAs`): sharp picks its decoder from the content, not from step 2. For AVIF that means HEIF with AV1, so a HEIC photo claiming an AVIF brand is refused.
+  3. **What sharp decodes must be the sniffed format** (`decodedAs`): sharp picks its decoder from the content, not from step 2. For AVIF that means HEIF with AV1. This is defence in depth: in the re-review's probes no real file got past the sniff and then decoded as something else. A HEIC photo is refused because the sniff wants an AVIF major brand, and this sharp build cannot decode HEVC.
      - **A7 review, blocker:** the first version found an `avif` brand anywhere in a file whose first four bytes read as a huge box size. So `<!--ftypavif--><svg…>` passed and sharp rendered it with librsvg. The output was a harmless WebP, but the acceptance ("an SVG is rejected") failed and the SVG renderer was exposed.
      - The two gates now stop it: the tightened sniff rejects that file, and an SVG behind a valid AVIF box fails as HEIF.
   4. **Decode and re-encode to WebP:**
@@ -508,7 +508,7 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 - **All or nothing:**
   - Every file is checked and converted before any is stored, so one bad file uploads nothing.
   - If a Storage upload fails after others succeeded, the stored ones are removed.
-  - Files from a successful upload whose project save then fails stay until D1-5 cleans a project's folder.
+  - Files from a successful upload whose project save then fails stay until D1-5 cleans a project's folder. Rarer cases can also leave a stored file behind: Storage writes the file but reports an error, the clean-up call fails, or the function is stopped mid-upload. D1-5's folder clean-up covers them.
 - **Storage:**
   - Paths are `projects/{slug}/{cover|gallery-n}-{random UUID}.webp`. The original name never reaches Storage.
   - `upsert: false` means an upload can never replace an existing file.
