@@ -16,6 +16,12 @@ vi.mock("next/cache", () => ({
 }));
 vi.mock("@/lib/auth/guard", () => ({ requireAdmin: async () => null }));
 vi.mock("@/lib/site-settings", () => ({ saveSiteSettings: mocks.saveSiteSettings }));
+// Delete also reads the project and cleans its Storage folder (D1-5); that is tested in
+// tests/unit/images/cleanup.test.ts, so here it is a no-op.
+vi.mock("@/lib/images/cleanup", () => ({
+  PROJECTS_BUCKET: "projects",
+  removeProjectFiles: async () => 0
+}));
 vi.mock("@/lib/supabase/admin", () => {
   // insert(...), update(...).eq(...), delete().eq(...) all resolve to { error: null }.
   const result = () => {
@@ -26,7 +32,19 @@ vi.mock("@/lib/supabase/admin", () => {
   };
   return {
     createAdminClient: () => ({
-      from: () => ({ insert: result, update: result, delete: result })
+      from: () => ({
+        insert: result,
+        update: result,
+        delete: result,
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({
+              data: { slug: "arzaq-marketplace", thumbnail_url: null, images: [] },
+              error: null
+            })
+          })
+        })
+      })
     })
   };
 });
