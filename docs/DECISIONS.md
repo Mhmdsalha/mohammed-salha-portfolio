@@ -530,6 +530,29 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     - a failed second upload removes the first, and Storage's error text is hidden;
     - a good image is stored as WebP under a random name with `upsert: false`, even when its name is `../../evil name.png`.
 
+## D-031 Storage clean-up on delete (D1-5) — Accepted (2026-11-26)
+
+- **Order:** `deleteProject` reads the project, deletes the **row first**, revalidates `projects`, then removes its files (`src/lib/images/cleanup.ts`).
+  - The row is the source of truth: if it cannot be deleted, no file is touched.
+  - If the clean-up fails after the row is gone, the action still reports the deletion, with a warning that some images stayed in Storage, and logs the details.
+  - An unknown id returns "Project not found." and changes nothing.
+- **What is removed** (`filesToRemove`):
+  - every file in `projects/{slug}/`, including uploads the project no longer references (an older cover, files left by a failed save, D-030);
+  - any of the project's referenced images stored elsewhere in the bucket, for example under its old slug after a rename.
+  - A file another project still references is kept.
+  - Only URLs that point into this project's `projects` bucket count. A path containing `..` is ignored. External images (other hosts) are never touched.
+- **Known limits:**
+  - Files stay in CDN caches for up to their one-year `max-age` (D-030).
+  - Files already orphaned under the folder of a project that still exists are not touched until that project is deleted. Production has one such file: an older Arzaq cover.
+- **Tests** (`tests/unit/images/cleanup.test.ts`, 7):
+  - URL-to-path parsing: other hosts, other buckets and `..` are ignored;
+  - the selection: the slug folder, an image under an old slug, a file shared with another project;
+  - the real action against a fake client that records each call:
+    - the order is read, delete row, list, remove;
+    - the files removed are the cover and the older orphan;
+    - nothing is removed if the row delete fails or the project does not exist;
+    - a failed clean-up reports success with a warning.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).

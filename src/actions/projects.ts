@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/guard";
+import { PROJECTS_BUCKET, removeProjectFiles } from "@/lib/images/cleanup";
 import { ImageRejected, toSafeWebp } from "@/lib/images/process";
 import { MAX_FILES_PER_UPLOAD, MAX_UPLOAD_BYTES } from "@/lib/images/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -28,7 +29,7 @@ const projectSchema = z.object({
   order_num: z.coerce.number().int().min(0)
 });
 
-const storageBucket = "projects";
+const storageBucket = PROJECTS_BUCKET;
 
 /**
  * After any project change: the public pages (home, project pages, sitemap) and skills, through
@@ -266,6 +267,20 @@ export async function deleteProject(id: string) {
   }
 
   const supabase = createAdminClient();
+  const { data: project, error: readError } = await supabase
+    .from("projects")
+    .select("slug,thumbnail_url,images")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (readError) {
+    return { success: false, message: readError.message };
+  }
+  if (!project) {
+    return { success: false, message: "Project not found." };
+  }
+
+  // The row first: it is the source of truth. If this fails, no file is touched.
   const { error } = await supabase.from("projects").delete().eq("id", id);
 
   if (error) {
@@ -273,5 +288,21 @@ export async function deleteProject(id: string) {
   }
 
   revalidateProjects();
+
+  // Then its images, so no orphan files stay in Storage (D1-5, D-031).
+  try {
+    await removeProjectFiles(supabase, project, process.env.NEXT_PUBLIC_SUPABASE_URL);
+  } catch (cleanupError) {
+    console.error(
+      "deleteProject: project deleted, Storage clean-up failed",
+      project.slug,
+      cleanupError
+    );
+    return {
+      success: true,
+      message: "Project deleted, but some of its images could not be removed from Storage."
+    };
+  }
+
   return { success: true, message: "Project deleted." };
 }
