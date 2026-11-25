@@ -279,6 +279,13 @@
     monospace;
 }
 
+/* While the mobile menu sheet is open the page behind it does not scroll (P4-1, D-032). The
+   gutter stays reserved, so hiding the scrollbar shifts nothing. */
+html:has(dialog[data-menu-sheet][open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
 /* ---- Old site styles below: removed as P4 replaces each section (D-021). ---- */
 
 @font-face {

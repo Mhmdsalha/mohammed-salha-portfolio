@@ -565,6 +565,44 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     - nothing is removed if the row delete fails or the project doesn't exist;
     - a failed clean-up reports success with a warning.
 
+## D-032 Site header and mobile menu (P4-1) — Accepted (2026-11-26)
+
+- **Header** (`src/components/site/SiteHeader.tsx`, server component, SPEC §3.1):
+  - sticky and translucent (paper at 90% with a 10px blur, V-12);
+  - the logo "محمد صالحة." with the accent dot;
+  - four section links (projects, skills, education, contact) with the design's underline sweep, which grows from the start side in both directions;
+  - the language pill and the CV button (ink, download icon, plain `<a download>` to `/cv.pdf`, which D5-5 serves);
+  - a 1px ink rule that draws in from the start side.
+  - Its height never changes on scroll (no shrinking header), so it causes no layout shift.
+  - Copy comes from `site.nav`.
+  - It takes `homePath` (the page holding the sections; `/{locale}/preview` until P4-10) and `currentPath` (for the language switch, which keeps the page, P3-2).
+- **Breakpoints:**
+  - links from 900px, as in the design;
+  - below 900px a menu button opens the sheet (V-11);
+  - the CV button moves into the sheet below 640px, so logo, language and menu fit at 360px with no overflow.
+- **Mobile sheet** (`MobileMenu.tsx`, client component):
+  - A native modal `<dialog>`: the browser makes the page behind inert and closes it on Esc.
+  - Tab and Shift+Tab loop inside it. A modal dialog alone lets Tab leave for the browser's own toolbar, which the first browser test caught.
+  - Focus returns to the menu button on every close: Esc, the close button, a link, the backdrop (R14).
+  - It closes when the window widens past 900px.
+  - The page behind does not scroll while it is open (`html:has(dialog[data-menu-sheet][open])`, with a stable scrollbar gutter).
+  - It opens at the inline end: the left in Arabic, the right in English.
+  - Copy comes from the server as props, so no messages are shipped.
+- **Accessibility:**
+  - A skip link comes first and moves focus to `<main id="main" tabindex="-1">`.
+  - The language pill shows "EN" / "ع" with the full label in a visually hidden span and `lang` set, so its accessible name contains the visible text (WCAG 2.5.3).
+  - The CV button's label ("Download CV (PDF)") contains its visible text.
+  - Every control is at least 44px.
+- **Tests** (`e2e/header.spec.ts`, 11, both directions): `@axe-core/playwright` is a new dev dependency (QA gate 4). The tests check:
+  - keyboard only: the skip link moves focus to main, and the Tab order runs through eight distinct controls;
+  - no layout shift while scrolling (measured with a `layout-shift` observer: 0), and the header stays at the top with the same height;
+  - the sheet: focus stays inside for 12 Tabs and 6 Shift+Tabs, the page behind does not scroll, Esc closes it, and focus returns to the button;
+  - a link closes the sheet and goes to its section, and a backdrop click closes it;
+  - no serious or critical axe issues in the header and the open sheet, at 1280 and 360px;
+  - no animation under reduced motion;
+  - no sideways scroll at 360px.
+  - The hero's CV test is now scoped to `main`, since the header has a CV link too.
+
 ## Backlog (not in scope until A0 schedules it)
 
 - Run `npm run e2e` in CI against each PR's Vercel preview URL (D-019).
