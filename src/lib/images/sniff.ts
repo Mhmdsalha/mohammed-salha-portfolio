@@ -2,12 +2,33 @@ import type { ImageFormat } from "@/lib/images/rules";
 
 // Identifies an image by its first bytes ("magic numbers"), never by its name or declared type
 // (D1-3, D-030). An SVG (text), an HTML page or an executable renamed to .png is rejected here.
+// This is the first gate only: process.ts also checks what sharp actually decoded, because sharp
+// picks its decoder from the content, not from this result (A7 review: an SVG starting with
+// "<!--ftypavif-->" passed the first version of the AVIF check).
 
 const ascii = (bytes: Uint8Array, start: number, end: number) =>
   String.fromCharCode(...bytes.subarray(start, end));
 
 const startsWith = (bytes: Uint8Array, signature: number[]) =>
   bytes.length >= signature.length && signature.every((byte, index) => bytes[index] === byte);
+
+const AVIF_BRANDS = new Set(["avif", "avis"]);
+
+/**
+ * AVIF is an ISO-BMFF file: it starts with an `ftyp` box (4-byte size, "ftyp", major brand,
+ * minor version, compatible brands). The box size must be sane, and brands are only read
+ * inside the box, so text that merely contains "ftypavif" is not taken for AVIF.
+ */
+function isAvif(bytes: Uint8Array): boolean {
+  if (bytes.length < 16 || ascii(bytes, 4, 8) !== "ftyp") return false;
+  const boxSize = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0);
+  if (boxSize < 16 || boxSize > bytes.length || boxSize > 256 || boxSize % 4 !== 0) return false;
+  if (AVIF_BRANDS.has(ascii(bytes, 8, 12))) return true;
+  for (let offset = 16; offset + 4 <= boxSize; offset += 4) {
+    if (AVIF_BRANDS.has(ascii(bytes, offset, offset + 4))) return true;
+  }
+  return false;
+}
 
 /** The accepted format the bytes are, or null. */
 export function sniffImageFormat(bytes: Uint8Array): ImageFormat | null {
@@ -16,15 +37,6 @@ export function sniffImageFormat(bytes: Uint8Array): ImageFormat | null {
   if (bytes.length >= 12 && ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 12) === "WEBP") {
     return "webp";
   }
-  // ISO-BMFF: a box size, then "ftyp", the major brand and a list of compatible brands.
-  if (bytes.length >= 16 && ascii(bytes, 4, 8) === "ftyp") {
-    const boxSize = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0);
-    const end = Math.min(boxSize, bytes.length);
-    for (let offset = 8; offset + 4 <= end; offset += 4) {
-      if (offset === 12) continue; // minor version, not a brand
-      const brand = ascii(bytes, offset, offset + 4);
-      if (brand === "avif" || brand === "avis") return "avif";
-    }
-  }
+  if (isAvif(bytes)) return "avif";
   return null;
 }

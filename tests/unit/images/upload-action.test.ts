@@ -4,7 +4,7 @@
 import sharp from "sharp";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ upload: vi.fn() }));
+const mocks = vi.hoisted(() => ({ upload: vi.fn(), remove: vi.fn(), failUploadNumber: 0 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("@/lib/auth/guard", () => ({ requireAdmin: async () => null }));
@@ -15,6 +15,12 @@ vi.mock("@/lib/supabase/admin", () => ({
       from: () => ({
         upload: async (...args: unknown[]) => {
           mocks.upload(...args);
+          return mocks.upload.mock.calls.length === mocks.failUploadNumber
+            ? { error: { message: "Internal: bucket quota exceeded at node-7" } }
+            : { error: null };
+        },
+        remove: async (paths: string[]) => {
+          mocks.remove(paths);
           return { error: null };
         },
         getPublicUrl: (path: string) => ({ data: { publicUrl: `https://cdn.example/${path}` } })
@@ -41,6 +47,8 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
   mocks.upload.mockReset();
+  mocks.remove.mockReset();
+  mocks.failUploadNumber = 0;
 });
 
 describe("uploadProjectImages", () => {
@@ -91,5 +99,36 @@ describe("uploadProjectImages", () => {
     );
     expect((await sharp(body as Buffer).metadata()).format).toBe("webp");
     expect(options).toEqual({ contentType: "image/webp", cacheControl: "31536000", upsert: false });
+  });
+
+  it("refuses more than 12 files before processing any", async () => {
+    const files = Array.from({ length: 13 }, (_, i): ["images", File] => [
+      "images",
+      new File(["x"], `${i}.png`, { type: "image/png" })
+    ]);
+    expect(await uploadProjectImages(form(files))).toEqual({
+      success: false,
+      message: "Upload at most 12 images at a time."
+    });
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+
+  it("removes what it stored when a later upload fails, and hides Storage's error text", async () => {
+    mocks.failUploadNumber = 2;
+    const image = async (name: string) =>
+      new File([new Uint8Array(await png())], name, { type: "image/png" });
+    const result = await uploadProjectImages(
+      form([
+        ["thumbnail", await image("a.png")],
+        ["images", await image("b.png")],
+        ["images", await image("c.png")]
+      ])
+    );
+    expect(result).toEqual({ success: false, message: "Image upload failed. Please try again." });
+    expect(mocks.upload).toHaveBeenCalledTimes(3);
+    const stored = mocks.upload.mock.calls
+      .filter((_, index) => index !== 1)
+      .map(([path]) => path as string);
+    expect(mocks.remove).toHaveBeenCalledWith(stored);
   });
 });

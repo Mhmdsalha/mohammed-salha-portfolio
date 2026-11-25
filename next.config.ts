@@ -6,7 +6,9 @@ const nextConfig: NextConfig = {
     // src/app/global-not-found.tsx: unmatched URLs get a server-rendered localised 404 (D-026).
     globalNotFound: true,
     serverActions: {
-      bodySizeLimit: "8mb"
+      // Vercel caps function request bodies at 4.5 MB; match it below that, so local runs behave
+      // like production (src/lib/images/rules.ts, D-030).
+      bodySizeLimit: "4mb"
     }
   },
   images: {

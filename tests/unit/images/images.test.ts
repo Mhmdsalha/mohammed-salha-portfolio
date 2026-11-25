@@ -2,8 +2,9 @@
 // rejected on the server. Real images are generated with sharp; hostile files are built by hand.
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { ImageRejected, MAX_IMAGE_SIDE, toSafeWebp } from "@/lib/images/process";
-import { MAX_UPLOAD_BYTES, checkFilesBeforeUpload } from "@/lib/images/rules";
+import { ImageRejected, MAX_IMAGE_SIDE, decodedAs, toSafeWebp } from "@/lib/images/process";
+import { deflateSync } from "node:zlib";
+import { MAX_FILES_PER_UPLOAD, MAX_UPLOAD_BYTES, checkFilesBeforeUpload } from "@/lib/images/rules";
 import { sniffImageFormat } from "@/lib/images/sniff";
 
 const solid = (width: number, height: number) =>
@@ -77,10 +78,63 @@ describe("toSafeWebp", () => {
     await expect(toSafeWebp(fileOf(fake, "broken.png"))).rejects.toThrow(/could not be read/);
   });
 
-  it("rejects a file over 5 MB before reading it as an image", async () => {
+  it("rejects an SVG that only looks like AVIF (A7 review polyglot)", async () => {
+    const polyglot = `<!--ftypavif-->${SVG}`;
+    expect(sniffImageFormat(new TextEncoder().encode(polyglot))).toBeNull();
+    await expect(toSafeWebp(fileOf(polyglot, "x.avif", "image/avif"))).rejects.toBeInstanceOf(
+      ImageRejected
+    );
+  });
+
+  it("accepts only the decoded format that was sniffed (the second gate)", () => {
+    expect(decodedAs("png", { format: "png" } as never)).toBe(true);
+    expect(decodedAs("avif", { format: "heif", compression: "av1" } as never)).toBe(true);
+    expect(decodedAs("avif", { format: "heif", compression: "hevc" } as never)).toBe(false); // HEIC
+    expect(decodedAs("avif", { format: "svg" } as never)).toBe(false);
+    expect(decodedAs("png", { format: "svg" } as never)).toBe(false);
+    expect(decodedAs("jpeg", { format: "png" } as never)).toBe(false);
+  });
+
+  it("rejects an SVG behind a well-formed AVIF box (sharp cannot decode it as HEIF)", async () => {
+    const box = new Uint8Array(16);
+    box.set([0, 0, 0, 16]);
+    box.set(new TextEncoder().encode("ftypavif"), 4);
+    const svg = new TextEncoder().encode(SVG);
+    const polyglot = new Uint8Array([...box, ...svg]);
+    expect(sniffImageFormat(polyglot)).toBe("avif"); // passes the first gate…
+    await expect(toSafeWebp(fileOf(polyglot, "x.avif", "image/avif"))).rejects.toBeInstanceOf(
+      ImageRejected
+    ); // …and never reaches the SVG decoder
+  });
+
+  it("rejects a decompression bomb (30000×30000 PNG in a few KB) quickly", async () => {
+    const chunk = (type: string, data: Uint8Array) => {
+      const out = new Uint8Array(12 + data.length);
+      new DataView(out.buffer).setUint32(0, data.length);
+      out.set(new TextEncoder().encode(type), 4);
+      out.set(data, 8);
+      return out; // CRC left as zero: decoders must not get far enough to care
+    };
+    const ihdr = new Uint8Array(13);
+    new DataView(ihdr.buffer).setUint32(0, 30000);
+    new DataView(ihdr.buffer).setUint32(4, 30000);
+    ihdr.set([8, 2, 0, 0, 0], 8);
+    const idat = deflateSync(new Uint8Array(30001 * 3 * 50));
+    const bomb = new Uint8Array([
+      ...[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+      ...chunk("IHDR", ihdr),
+      ...chunk("IDAT", idat),
+      ...chunk("IEND", new Uint8Array())
+    ]);
+    const started = Date.now();
+    await expect(toSafeWebp(fileOf(bomb, "bomb.png"))).rejects.toBeInstanceOf(ImageRejected);
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it("rejects a file over the size limit before reading it as an image", async () => {
     const huge = new Uint8Array(MAX_UPLOAD_BYTES + 1);
     huge.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    await expect(toSafeWebp(fileOf(huge, "huge.png"))).rejects.toThrow(/larger than 5 MB/);
+    await expect(toSafeWebp(fileOf(huge, "huge.png"))).rejects.toThrow(/larger than 4 MB/);
   });
 });
 
@@ -103,8 +157,13 @@ describe("checkFilesBeforeUpload (the form's early check)", () => {
       /a\.png .* limit/
     );
     expect(checkFilesBeforeUpload([file("a.svg", 10, "image/svg+xml")])).toMatch(/not a PNG/);
-    expect(checkFilesBeforeUpload([file("a.png", 4_000_000), file("b.png", 4_000_000)])).toMatch(
+    expect(checkFilesBeforeUpload([file("a.png", 2_500_000), file("b.png", 2_500_000)])).toMatch(
       /at a time/
     );
+    expect(
+      checkFilesBeforeUpload(
+        Array.from({ length: MAX_FILES_PER_UPLOAD + 1 }, (_, i) => file(`${i}.png`, 10))
+      )
+    ).toMatch(/at most 12 images/);
   });
 });

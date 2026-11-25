@@ -5,7 +5,7 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/guard";
 import { ImageRejected, toSafeWebp } from "@/lib/images/process";
-import { MAX_UPLOAD_BYTES } from "@/lib/images/rules";
+import { MAX_FILES_PER_UPLOAD, MAX_UPLOAD_BYTES } from "@/lib/images/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PROJECT_CATEGORIES } from "@/types";
 
@@ -84,7 +84,7 @@ async function storeWebp(webp: Buffer, slug: string, prefix: string) {
   }
 
   const { data } = supabase.storage.from(storageBucket).getPublicUrl(path);
-  return data.publicUrl;
+  return { path, url: data.publicUrl };
 }
 
 export async function uploadProjectImages(formData: FormData) {
@@ -107,6 +107,10 @@ export async function uploadProjectImages(formData: FormData) {
     .getAll("images")
     .filter((value): value is File => value instanceof File && value.size > 0);
 
+  if ((coverFile ? 1 : 0) + imageFiles.length > MAX_FILES_PER_UPLOAD) {
+    return { success: false, message: `Upload at most ${MAX_FILES_PER_UPLOAD} images at a time.` };
+  }
+
   // Check and convert every file before storing any, so one bad file uploads nothing.
   let cover: Buffer | null;
   let gallery: Buffer[];
@@ -121,24 +125,43 @@ export async function uploadProjectImages(formData: FormData) {
 
   try {
     await ensureProjectsBucket();
-
-    const thumbnailUrl = cover ? await storeWebp(cover, slug, "cover") : null;
-    const imageUrls = await Promise.all(
-      gallery.map((webp, index) => storeWebp(webp, slug, `gallery-${index + 1}`))
-    );
-
-    return {
-      success: true,
-      message: "Images uploaded.",
-      thumbnailUrl,
-      imageUrls
-    };
   } catch (error) {
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Image upload failed."
-    };
+    console.error("uploadProjectImages: storage bucket check failed", error);
+    return { success: false, message: "Image upload failed. Please try again." };
   }
+
+  // Store all, then keep all or none: if one upload fails, remove the ones that succeeded, so
+  // a failed request leaves no orphan files (A7 review).
+  const jobs = [
+    ...(cover ? [{ webp: cover, prefix: "cover" }] : []),
+    ...gallery.map((webp, index) => ({ webp, prefix: `gallery-${index + 1}` }))
+  ];
+  const results = await Promise.allSettled(
+    jobs.map((job) => storeWebp(job.webp, slug, job.prefix))
+  );
+  const failed = results.filter((result) => result.status === "rejected");
+  if (failed.length > 0) {
+    const stored = results.flatMap((result) =>
+      result.status === "fulfilled" ? [result.value.path] : []
+    );
+    if (stored.length > 0) {
+      const { error } = await createAdminClient().storage.from(storageBucket).remove(stored);
+      if (error)
+        console.error("uploadProjectImages: could not remove partial upload", stored, error);
+    }
+    console.error("uploadProjectImages: storage upload failed", failed);
+    return { success: false, message: "Image upload failed. Please try again." };
+  }
+
+  const urls = results.flatMap((result) =>
+    result.status === "fulfilled" ? [result.value.url] : []
+  );
+  return {
+    success: true,
+    message: "Images uploaded.",
+    thumbnailUrl: cover ? urls[0]! : null,
+    imageUrls: cover ? urls.slice(1) : urls
+  };
 }
 
 export async function createProject(data: unknown) {

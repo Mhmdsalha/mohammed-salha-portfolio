@@ -487,31 +487,48 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
 ## D-030 Upload hardening (D1-3) — Accepted (2026-11-25)
 
 - **Every upload is checked and re-encoded on the server** (`src/lib/images/process.ts`, `toSafeWebp`):
-  1. **Size:** at most 5 MB per file, checked before reading it as an image.
+  1. **Size:** at most 4 MB per file, checked before reading it as an image.
   2. **Type by magic bytes** (`src/lib/images/sniff.ts`): PNG, JPEG, WebP or AVIF. The file name and the declared type are ignored.
      - An SVG (text, can carry script), HTML, a GIF or a renamed executable is rejected.
-     - AVIF is recognised by its `ftyp` brands, so an MP4 is not taken for AVIF.
+     - AVIF needs a well-formed `ftyp` box: a size of 16–256 bytes, a multiple of 4, within the file. Brands are read only inside that box.
      - The plan named the `file-type` package; four signatures are a few lines and need no dependency.
-  3. **Decode and re-encode to WebP with sharp:**
-     - Only a real, decodable image survives: a valid header with garbage behind it is rejected.
-     - Metadata (EXIF, GPS, XMP) is dropped after the orientation is applied.
-     - Images are scaled down to 2400 px on the long side, never up.
-     - A 50-megapixel input limit stops decompression bombs.
-     - `sharp` is now a direct dependency (it was only Next's optional one). Next loads it as an external module on the server; it is not in any browser bundle.
-- **All or nothing:** every file in a request is checked and converted before any is stored, so one bad file uploads nothing.
+  3. **What sharp decodes must be the sniffed format** (`decodedAs`): sharp picks its decoder from the content, not from step 2. For AVIF that means HEIF with AV1, so a HEIC photo claiming an AVIF brand is refused.
+     - **A7 review, blocker:** the first version found an `avif` brand anywhere in a file whose first four bytes read as a huge box size. So `<!--ftypavif--><svg…>` passed and sharp rendered it with librsvg. The output was a harmless WebP, but the acceptance ("an SVG is rejected") failed and the SVG renderer was exposed.
+     - The two gates now stop it: the tightened sniff rejects that file, and an SVG behind a valid AVIF box fails as HEIF.
+  4. **Decode and re-encode to WebP:**
+     - Only a real, decodable image survives. Metadata (EXIF, GPS, XMP, ICC) is dropped after the orientation is applied; CMYK and 16-bit inputs become 8-bit sRGB.
+     - Images are capped at 2400 px on the long side and never enlarged. An animated image keeps its first frame.
+     - A 50-megapixel input limit stops decompression bombs: a 30000×30000 PNG of a few KB is rejected in milliseconds.
+     - `failOn: "error"` also rejects damaged files, including a JPEG missing only its end marker, which browsers would still show. Accepted: re-saving the photo fixes it.
+     - `sharp` is a direct dependency (it was only Next's optional one; both resolve to 0.34.5). Next loads it as an external module on the server; it is in no browser bundle. The lockfile carries the Linux binary.
+- **Request limits (R10):** Vercel rejects function request bodies over **4.5 MB** before the app runs (A7 review). The first version assumed the 8 MB server-action limit.
+  - Each request and each file is now capped at 4 MB, and `next.config.ts` limits server actions to 4 MB, so local runs behave like production. The plan's 5 MB per file cannot fit in one request.
+  - At most 12 files per request: decoding costs CPU, and functions have a time limit.
+  - D5-3 uploads one file per request, or uploads straight to Storage with signed URLs and processes afterwards.
+- **All or nothing:**
+  - Every file is checked and converted before any is stored, so one bad file uploads nothing.
+  - If a Storage upload fails after others succeeded, the stored ones are removed.
+  - Files from a successful upload whose project save then fails stay until D1-5 cleans a project's folder.
 - **Storage:**
   - Paths are `projects/{slug}/{cover|gallery-n}-{random UUID}.webp`. The original name never reaches Storage.
   - `upsert: false` means an upload can never replace an existing file.
-  - `contentType` is `image/webp`, with a one-year cache (names never repeat).
-  - A newly created bucket would accept only `image/webp` up to 5 MB. The existing production bucket keeps its settings; L-1 reviews bucket policies.
-- **Form** (R10, in part):
-  - The file pickers accept only the four types.
-  - Before uploading, the form checks each file (5 MB, type) and the request total (7.5 MB, under the 8 MB server-action limit). It names the problem in a toast.
-  - A request rejected for its size now shows a message instead of failing silently.
-  - One file per request with per-file progress is D5-3.
-- **Tests** (16):
-  - `tests/unit/images/images.test.ts` uses real images generated with sharp and hand-built hostile files. It covers sniffing of all four formats and the rejected types, conversion to WebP, EXIF removal, downscaling, the broken image, the size limit and the form's checks.
-  - `tests/unit/images/upload-action.test.ts` calls the real server action. An SVG named `.png` and a renamed `.exe` are rejected and nothing reaches Storage; one bad file among good ones stores nothing; a good image is stored as WebP under a random name with `upsert: false`, even when its name is `../../evil name.png`.
+  - `contentType` is `image/webp`, with a one-year cache (names never repeat). Note for D1-5: a deleted file may stay in CDN caches until then.
+  - Storage error details go to the server log; the dashboard shows a general message.
+  - A newly created bucket would accept only `image/webp` up to 4 MB. The production bucket has no type or size limit (read-only check by the reviewer), so the server is the only gate; L-1 reviews bucket policies.
+  - Old PNG and JPEG thumbnails keep working: the public cards use plain `<img>`, and `*.supabase.co` is in `remotePatterns` (R11).
+- **Form:**
+  - The pickers accept only the four types.
+  - Before uploading, the form checks the file count, each file's size and type, and the request total, and names the problem in a toast.
+  - A request that fails before the action runs (too large, expired session, network) now shows a message that names those causes instead of failing silently.
+- **Tests** (22 in `tests/unit/images`; 173 in the suite):
+  - `tests/unit/images/images.test.ts` uses real images generated with sharp and hand-built hostile files. It covers:
+    - sniffing of all four formats and the rejected types, the MP4 case, both SVG polyglots, and the decoded-format check (including HEIC);
+    - conversion, EXIF removal, downscaling, the broken image, the decompression bomb, the size limit, and the form's checks (count, size, type, total).
+  - `tests/unit/images/upload-action.test.ts` calls the real server action:
+    - an SVG named `.png` and a renamed `.exe` are rejected, and nothing reaches Storage;
+    - one bad file among good ones stores nothing; 13 files are refused;
+    - a failed second upload removes the first, and Storage's error text is hidden;
+    - a good image is stored as WebP under a random name with `upsert: false`, even when its name is `../../evil name.png`.
 
 ## Backlog (not in scope until A0 schedules it)
 

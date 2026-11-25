@@ -132,7 +132,9 @@ export function ProjectForm({ project }: { project?: Project }) {
         // A request over the server-action body limit rejects before the action runs (R10).
         const uploadResult = await uploadProjectImages(formData).catch(() => ({
           success: false as const,
-          message: "The upload failed. Try fewer or smaller images at once."
+          // Not only size: an expired session (redirect to login) or a network error lands here.
+          message:
+            "Upload failed: the images may be too large together, or your session expired. Reload the page and try again."
         }));
 
         if (!uploadResult.success) {
