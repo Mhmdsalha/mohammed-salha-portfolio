@@ -279,6 +279,21 @@
     monospace;
 }
 
+/* While the mobile menu sheet is open the page behind it does not scroll (P4-1, D-032). The lock
+   is on body, which hands it to the viewport: on html it would make body the scroll container
+   (the old site sets body overflow-x), and the sticky header would scroll away with the page
+   (A7 review). No scrollbar-gutter: toggling it with the lock reset the page to the top. Phones
+   have overlay scrollbars; on a narrow desktop window the page behind the backdrop may move by
+   the scrollbar's width, which the backdrop hides. */
+body:has(dialog[data-menu-sheet][open]) {
+  overflow: hidden;
+}
+
+/* Section links and the skip link land below the sticky header, not under it (A7 review). */
+html:has([data-site-header]) {
+  scroll-padding-top: 6rem;
+}
+
 /* ---- Old site styles below: removed as P4 replaces each section (D-021). ---- */
 
 @font-face {

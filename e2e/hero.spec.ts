@@ -109,7 +109,8 @@ test("motion runs when allowed", async ({ page }) => {
 
 test("the CV button is a plain download link, not client-routed", async ({ page }) => {
   await open(page, "en");
-  const cv = page.getByRole("link", { name: "Download CV" });
+  // The hero's button; the header (P4-1) has its own "Download CV (PDF)".
+  const cv = page.locator("main").getByRole("link", { name: "Download CV" });
   await expect(cv).toHaveAttribute("href", "/cv.pdf");
   await expect(cv).toHaveAttribute("download", "");
 });

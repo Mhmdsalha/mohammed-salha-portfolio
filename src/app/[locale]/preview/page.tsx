@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { setRequestLocale } from "next-intl/server";
 import { fontVariables } from "@/app/fonts";
 import { Hero } from "@/components/sections/home/Hero";
+import { SiteHeader } from "@/components/site/SiteHeader";
 import type { Locale } from "@/types";
 
 // Preview of the rebuilt home page (D-023). The new sections are assembled here, section by
@@ -19,10 +20,14 @@ export default async function PreviewPage({ params }: { params: Promise<{ locale
 
   return (
     // font-body sits below the layout's [dir] wrapper, which the old site's CSS still styles (D-022).
-    <main className={`${fontVariables} min-h-screen bg-paper font-body text-ink`}>
-      <div className="mx-auto max-w-page px-gutter">
-        <Hero locale={locale} />
-      </div>
-    </main>
+    <div className={`${fontVariables} min-h-screen bg-paper font-body text-ink`}>
+      <SiteHeader locale={locale} homePath={`/${locale}/preview`} currentPath="/preview" />
+      {/* tabIndex -1: the skip link moves focus here, not only the scroll position. */}
+      <main id="main" tabIndex={-1} className="outline-none">
+        <div className="mx-auto max-w-page px-gutter">
+          <Hero locale={locale} />
+        </div>
+      </main>
+    </div>
   );
 }
