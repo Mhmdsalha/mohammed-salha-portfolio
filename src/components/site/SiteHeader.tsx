@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { MobileMenu } from "@/components/site/MobileMenu";
 import { Button } from "@/components/ui/Button";
+import { FOCUS_RING } from "@/components/ui/focus";
 import { type AppLocale, otherLocale } from "@/lib/i18n/locales";
 import { localePath } from "@/lib/seo";
 
@@ -37,16 +38,23 @@ export async function SiteHeader({ locale, homePath, currentPath }: SiteHeaderPr
 
   return (
     <>
+      {/* Kept just above the viewport and slid into view on focus: always in the accessibility
+          tree, never in the layout, so focusing it shifts nothing (A7 review: Tailwind's
+          not-sr-only reset its padding). */}
       <a
         href="#main"
-        className="sr-only z-50 rounded-full bg-ink px-5 py-3 font-semibold text-paper focus:not-sr-only focus:fixed focus:start-4 focus:top-4"
+        className={`fixed start-4 top-4 z-50 -translate-y-[calc(100%+2rem)] rounded-full bg-ink px-5 py-3 font-semibold text-paper focus:translate-y-0 ${FOCUS_RING}`}
       >
         {t("skipToContent")}
       </a>
 
-      <header className="sticky top-0 z-20 bg-paper/90 backdrop-blur-[10px]">
+      <header data-site-header className="sticky top-0 z-20 bg-paper/90 backdrop-blur-[10px]">
         <div className="mx-auto flex max-w-page animate-fade-up items-center justify-between gap-4 px-gutter py-[18px] motion-reduce:animate-none">
-          <Link href={homePath} className="font-display text-[21px] font-black whitespace-nowrap">
+          <Link
+            href={homePath}
+            data-header-home
+            className={`font-display text-[21px] font-black whitespace-nowrap ${FOCUS_RING}`}
+          >
             {t("logo")}
             <span className="text-accent">.</span>
           </Link>
@@ -59,7 +67,7 @@ export async function SiteHeader({ locale, homePath, currentPath }: SiteHeaderPr
               <a
                 key={link.href}
                 href={link.href}
-                className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0_2px] bg-no-repeat pb-[3px] [background-position:100%_100%] hover:bg-[length:100%_2px] focus-visible:bg-[length:100%_2px] ltr:[background-position:0_100%] motion-safe:transition-[background-size] motion-safe:duration-[400ms] motion-safe:ease-reveal"
+                className={`${FOCUS_RING} bg-[linear-gradient(currentColor,currentColor)] bg-[length:0_2px] bg-no-repeat pb-[3px] [background-position:100%_100%] hover:bg-[length:100%_2px] focus-visible:bg-[length:100%_2px] ltr:[background-position:0_100%] motion-safe:transition-[background-size] motion-safe:duration-[400ms] motion-safe:ease-reveal`}
               >
                 {link.label}
               </a>
@@ -67,7 +75,14 @@ export async function SiteHeader({ locale, homePath, currentPath }: SiteHeaderPr
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button href={switchHref} variant="ghost" size="sm" hrefLang={other} lang={other}>
+            <Button
+              href={switchHref}
+              variant="ghost"
+              size="sm"
+              hrefLang={other}
+              lang={other}
+              className="min-w-11"
+            >
               {t("switchLocale")}
               <span className="sr-only">{t("switchLocaleLabel")}</span>
             </Button>
@@ -91,7 +106,7 @@ export async function SiteHeader({ locale, homePath, currentPath }: SiteHeaderPr
               copy={{
                 open: t("openMenu"),
                 close: t("closeMenu"),
-                title: t("label"),
+                title: t("menuTitle"),
                 cv: t("cv"),
                 cvLabel: t("cvLabel"),
                 switchLocale: t("switchLocale"),

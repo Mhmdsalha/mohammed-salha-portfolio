@@ -22,6 +22,18 @@ const focused = (page: Page) =>
     };
   });
 
+/**
+ * Clicks where the element is, as a finger would. Playwright's locator.click() first scrolls the
+ * element into view, and for a control in a sticky header that scrolls the page to the top.
+ */
+async function tapInPlace(page: Page, selector: string) {
+  const [x, y] = await page.locator(selector).evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    return [box.x + box.width / 2, box.y + box.height / 2];
+  });
+  await page.mouse.click(x, y);
+}
+
 for (const locale of ["ar", "en"] as const) {
   const other = locale === "ar" ? "en" : "ar";
 
@@ -45,8 +57,20 @@ for (const locale of ["ar", "en"] as const) {
       await page.keyboard.press("Tab");
       order.push((await focused(page)).label);
     }
-    expect(order).toHaveLength(8);
-    expect(new Set(order).size).toBe(8);
+    // The exact reading order: skip link, logo, the four sections, language, CV.
+    const expected = await page.evaluate(() => {
+      const label = (el: Element) => el.getAttribute("aria-label") ?? el.textContent?.trim() ?? "";
+      const header = document.querySelector("header")!;
+      const desktopNav = header.querySelector("nav")!;
+      return [
+        label(document.querySelector('a[href="#main"]')!),
+        label(header.querySelector("[data-header-home]")!),
+        ...Array.from(desktopNav.querySelectorAll("a")).map(label),
+        label(header.querySelector(":scope > div > div > a[hreflang]")!),
+        label(header.querySelector(':scope > div > div a[href="/cv.pdf"]')!)
+      ];
+    });
+    expect(order).toEqual(expected);
     await expect(header.getByRole("link", { name: /CV|السيرة/ })).toHaveAttribute(
       "href",
       "/cv.pdf"
@@ -106,9 +130,7 @@ for (const locale of ["ar", "en"] as const) {
       expect((await focused(page)).inDialog, key).toBe(true);
     }
     // The page behind does not scroll while the sheet is open.
-    expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe(
-      "hidden"
-    );
+    expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).toBe("hidden");
 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -133,6 +155,80 @@ for (const locale of ["ar", "en"] as const) {
     const x = sheet.x > 1 ? sheet.x / 2 : (sheet.x + sheet.width + 360) / 2;
     await page.mouse.click(x, 400);
     await expect(dialog).toBeHidden();
+  });
+
+  test(`${locale}: the skip link shows fully, shifts nothing, and targets clear the header`, async ({
+    page
+  }) => {
+    await open(page, locale, 1280);
+    await page.waitForTimeout(1300);
+    const headerBefore = await page.locator("header").boundingBox();
+    await page.keyboard.press("Tab");
+    const skip = page.locator('a[href="#main"]');
+    const box = (await skip.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.y).toBeGreaterThanOrEqual(0); // slid into view
+    expect(await page.locator("header").boundingBox()).toEqual(headerBefore);
+    // Section links land below the sticky header (A7 review).
+    expect(
+      await page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingTop)
+    ).toBe("96px");
+  });
+
+  test(`${locale}: focus is clearly visible on the header controls`, async ({ page }) => {
+    await open(page, locale, 360);
+    const ring = (selector: string) =>
+      page.locator(selector).evaluate((el) => {
+        const style = getComputedStyle(el);
+        return [style.outlineStyle, style.outlineWidth, style.outlineOffset].join(" ");
+      });
+    await page.keyboard.press("Tab"); // skip link
+    await page.keyboard.press("Tab"); // logo
+    expect(await ring("[data-header-home]")).toBe("solid 2px 4px");
+    await page.locator('button[aria-haspopup="dialog"]').focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab"); // keyboard focus, so :focus-visible applies
+    expect(await ring('button[aria-haspopup="dialog"]')).toBe("solid 2px 4px");
+    // The language pill meets the 44px target in both directions (A7 review: "ع" was 38.9px).
+    const pill = (await page.locator("header a[hreflang]").first().boundingBox())!;
+    expect(Math.min(pill.width, pill.height)).toBeGreaterThanOrEqual(43.9); // sub-pixel rounding
+  });
+
+  test(`${locale}: opening the sheet on a scrolled page keeps the header in place`, async ({
+    page
+  }) => {
+    await open(page, locale, 360);
+    await page.mouse.move(180, 500);
+    await page.mouse.wheel(0, 150);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+    await page.waitForTimeout(600); // let the old site's smooth scrolling settle
+    const scrolled = await page.evaluate(() => window.scrollY);
+    await tapInPlace(page, 'button[aria-haspopup="dialog"]');
+    await expect(page.locator("dialog[data-menu-sheet]")).toBeVisible();
+    const top = await page.locator("header").evaluate((el) => el.getBoundingClientRect().top);
+    expect(top).toBe(0);
+    // The page stays where it was (A7 review: the first fix jumped it back to the top)…
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+    // …and is locked: a scroll attempt does not move it.
+    await page.mouse.wheel(0, 400);
+    await page.waitForTimeout(150);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+  });
+
+  test(`${locale}: widening the window closes the sheet and keeps focus visible`, async ({
+    page
+  }) => {
+    await open(page, locale, 360);
+    await page.locator('button[aria-haspopup="dialog"]').click();
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(page.locator("dialog[data-menu-sheet]")).toBeHidden();
+    // The menu button is gone at this width, so focus moves to the logo, not to <body>.
+    expect(
+      await page.evaluate(() => document.activeElement?.hasAttribute("data-header-home"))
+    ).toBe(true);
   });
 
   test(`${locale}: no serious accessibility issues in the header and the open sheet`, async ({

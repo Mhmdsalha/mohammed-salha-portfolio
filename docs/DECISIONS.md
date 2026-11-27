@@ -297,7 +297,7 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
   - **Unmatched URLs** (`/ar/xyz`, `/en/a/b`) render `src/app/global-not-found.tsx` on the server (`experimental.globalNotFound`): HTTP 404, `<html lang dir>`, the localised `site.errors` message and title, `noindex`, from the first byte. The middleware passes the URL's locale in the `x-site-locale` request header, always overwriting a visitor's own value. Trade-off: an experimental flag, and `/_not-found` is dynamic.
   - **`notFound()` thrown from a page or layout** (an unknown project slug; a dotted first segment such as `/cv.pdf` or `/x.txt` failing the layout's locale check) renders `src/app/[locale]/not-found.tsx`. **Known limit:** for a thrown `notFound()` Next 15.5 sends its error shell as the first HTML and renders the page on the client (React's server renderer has no error boundary, `app-render.js`). Visitors see the localised page (dotted paths get Next's plain English one), HTTP is 404, and a 404 needs no indexing. P4-9 revisits it with the designed error pages; P3-3 adds the real `robots.txt`, `sitemap.xml` and icon routes, and D5-5 the CV file.
   - The first version used a pass-through `app/layout.tsx` and then a `[locale]/[...rest]` catch-all; both put every unmatched URL through the error shell, a regression from `main` (A7 review).
-- **Language switch keeps the page:** `switchLocalePath()` swaps the first segment, keeping any query and hash in its input (`/ar/projects/x` → `/en/projects/x`), and is unit-tested. The old header's switcher uses it now (client component, `hrefLang`) with `usePathname()`, which has no query or hash, so those are dropped there; the new header (P4-1) uses the same helper.
+- **Language switch keeps the page:** `switchLocalePath()` swaps the first segment, keeping any query and hash in its input (`/ar/projects/x` → `/en/projects/x`), and is unit-tested. The old header's switcher uses it now (client component, `hrefLang`) with `usePathname()`, which has no query or hash, so those are dropped there. The new header (P4-1) builds its link on the server with `localePath()` from `@/lib/seo` (D-032).
 - **No `NextIntlClientProvider`:** every translation resolves on the server, so the message JSON is no longer embedded in every page. Client components that need copy get it as props (D-023 lever).
 - **Metadata:** the title and description now come from `site.meta` per locale, so the site no longer advertises Salla (P0-3 / P3-3 follow-up). Open Graph, hreflang, the sitemap and robots stay in P3-3. The dashboard is `noindex`.
 - **Tests:**
@@ -565,42 +565,52 @@ D-019 and D-020 were taken by P0-2 and P0-3 while this was open.
     - nothing is removed if the row delete fails or the project doesn't exist;
     - a failed clean-up reports success with a warning.
 
-## D-032 Site header and mobile menu (P4-1) — Accepted (2026-11-26)
+## D-032 Site header and mobile menu (P4-1) — Accepted (2026-11-28)
 
-- **Header** (`src/components/site/SiteHeader.tsx`, server component, SPEC §3.1):
-  - sticky and translucent (paper at 90% with a 10px blur, V-12);
-  - the logo "محمد صالحة." with the accent dot;
-  - four section links (projects, skills, education, contact) with the design's underline sweep, which grows from the start side in both directions;
+- **Header** (`src/components/site/SiteHeader.tsx`, server component, SPEC §3.1). Measurements match `Main.dc.html` at 1280 and 360px in both directions (A7 review):
+  - sticky, translucent (paper at 90% with a 10px blur, V-12), with 18px vertical padding;
+  - the logo "محمد صالحة." at 21px/900 with the accent dot;
+  - four section links (projects, skills, education, contact) at 15px/500 with a 28px gap. The underline sweep grows from the start side in both directions;
   - the language pill and the CV button (ink, download icon, plain `<a download>` to `/cv.pdf`, which D5-5 serves);
   - a 1px ink rule that draws in from the start side.
   - Its height never changes on scroll (no shrinking header), so it causes no layout shift.
   - Copy comes from `site.nav`.
-  - It takes `homePath` (the page holding the sections; `/{locale}/preview` until P4-10) and `currentPath` (for the language switch, which keeps the page, P3-2).
+  - It takes `homePath` (the page holding the sections; `/{locale}/preview` until P4-10) and `currentPath`. The language switch uses `localePath()` to keep the page (P3-2).
+  - `html:has([data-site-header])` sets `scroll-padding-top: 6rem`, so section links and the skip link land below the 81px header, not under it (A7 review).
 - **Breakpoints:**
-  - links from 900px, as in the design;
-  - below 900px a menu button opens the sheet (V-11);
+  - links from 900px (the design hides them at `max-width: 900px`, i.e. shows them from 901px; one pixel, accepted);
+  - below that a menu button opens the sheet (V-11);
   - the CV button moves into the sheet below 640px, so logo, language and menu fit at 360px with no overflow.
 - **Mobile sheet** (`MobileMenu.tsx`, client component):
-  - A native modal `<dialog>`: the browser makes the page behind inert and closes it on Esc.
+  - A native modal `<dialog>` named "Menu" by its `<h2>`; the nav inside has no name of its own, so the name isn't read twice (A7 review). The browser makes the page behind inert and closes it on Esc.
   - Tab and Shift+Tab loop inside it. A modal dialog alone lets Tab leave for the browser's own toolbar, which the first browser test caught.
-  - Focus returns to the menu button on every close: Esc, the close button, a link, the backdrop (R14).
-  - It closes when the window widens past 900px.
-  - The page behind does not scroll while it is open (`html:has(dialog[data-menu-sheet][open])`, with a stable scrollbar gutter).
+  - **Focus on close:** it returns to the menu button on every close (Esc, the close button, a link, the backdrop). When the sheet closes because the window widened past 900px, the button is hidden, so focus goes to the logo instead of being lost to `<body>` (A7 review, R14).
+  - The empty part of the sheet does not close it.
   - It opens at the inline end: the left in Arabic, the right in English.
   - Copy comes from the server as props, so no messages are shipped.
+- **Scroll lock:** `body:has(dialog[data-menu-sheet][open]) { overflow: hidden }`. Checked with real input: after wheel-scrolling and tapping the button, the page keeps its position, the header stays at the top, the wheel moves nothing, and closing keeps the position.
+  - The first version locked `html`. Because the old site sets `body { overflow-x: hidden }`, that made body the scroll container, and the sticky header scrolled away with the page whenever the sheet opened on a scrolled page (A7 review).
+  - No `scrollbar-gutter`: on a narrow desktop window the page behind the dark backdrop can move by the scrollbar's width. Phones have overlay scrollbars.
+  - Playwright's `locator.click()` scrolls an element in a sticky header into view, which jumps the page to the top. The tests tap the button where it is instead.
 - **Accessibility:**
-  - A skip link comes first and moves focus to `<main id="main" tabindex="-1">`.
-  - The language pill shows "EN" / "ع" with the full label in a visually hidden span and `lang` set, so its accessible name contains the visible text (WCAG 2.5.3).
+  - **Skip link:** first in the Tab order, and kept just above the viewport until focused, then slid into view at 44px tall. It never takes layout space, so focusing it shifts nothing. The first version used Tailwind's `not-sr-only`, which reset its padding, and it overlapped the logo (A7 review). It moves focus to `<main id="main" tabindex="-1">`.
+  - **Focus ring:** the logo, the links, the menu and close buttons and the sheet's links use Button's ring (2px accent, 4px offset, `src/components/ui/focus.ts`). Before, the round buttons only had the browser's default ring over their own 1px border (A7 review).
+  - **Language pill:** it shows "EN" / "ع" with the full label in a visually hidden span and `lang` set, so its accessible name contains the visible text (WCAG 2.5.3). It is at least 44×44px; "ع" was 38.9px wide before `min-w-11`.
   - The CV button's label ("Download CV (PDF)") contains its visible text.
-  - Every control is at least 44px.
-- **Tests** (`e2e/header.spec.ts`, 11, both directions): `@axe-core/playwright` is a new dev dependency (QA gate 4). The tests check:
-  - keyboard only: the skip link moves focus to main, and the Tab order runs through eight distinct controls;
-  - no layout shift while scrolling (measured with a `layout-shift` observer: 0), and the header stays at the top with the same height;
-  - the sheet: focus stays inside for 12 Tabs and 6 Shift+Tabs, the page behind does not scroll, Esc closes it, and focus returns to the button;
-  - a link closes the sheet and goes to its section, and a backdrop click closes it;
-  - no serious or critical axe issues in the header and the open sheet, at 1280 and 360px;
-  - no animation under reduced motion;
-  - no sideways scroll at 360px.
+- **Known limits:**
+  - `/cv.pdf` is a 404 until D5-5. With `download`, the browser records a failed download and the page shows nothing; acceptable on the noindex preview, and a gate for P4-10.
+  - On load at 1280px in Arabic, the font swap widens the logo and moves the nav by about 0.001 CLS. Most of that page's load CLS (0.07) comes from the old `Background` layer, which goes in P4-10.
+  - Real iOS and Android behaviour (`h-dvh` with the URL bar, the touch scroll lock) and actual screen-reader output were not tested.
+- **Tests** (`e2e/header.spec.ts`, 19, both directions): `@axe-core/playwright` is a new dev dependency (QA gate 4). The tests check:
+  - **Keyboard:** the exact Tab order (skip link, logo, four sections, language, CV); the skip link is 44px tall, shifts nothing, and moves focus to main; `scroll-padding-top` is set.
+  - **Focus rings:** the logo and the menu button, plus the language pill's size.
+  - **Scrolling:** no layout shift while scrolling (`layout-shift` observer: 0), and the header keeps its height at the top.
+  - **The sheet:**
+    - focus stays inside for 12 Tabs and 6 Shift+Tabs; Esc closes it and focus returns to the button;
+    - opening it on a scrolled page keeps the header and the position, locks the wheel, and keeps the position after closing;
+    - widening the window closes it and moves focus to the logo;
+    - a link closes it and goes to its section; a backdrop click closes it.
+  - **Other:** no serious or critical axe issues in the header and the open sheet at 1280 and 360px; no animation under reduced motion; no sideways scroll at 360px.
   - The hero's CV test is now scoped to `main`, since the header has a CV link too.
 
 ## Backlog (not in scope until A0 schedules it)
